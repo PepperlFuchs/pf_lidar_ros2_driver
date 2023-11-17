@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>pf_driver</name>
+  <version>2.0.0</version>
+  <description>The Pepperl+Fuchs LiDAR package</description>
+
+  <maintainer email="harshavardhan.deshpande@ipa.fraunhofer.de">Harsh Deshpande</maintainer>
+  <author email="harshavardhan.deshpande@ipa.fraunhofer.de">Harsh Deshpande</author>
+  <license>Apache2.0</license>
+  <url type="website">https://github.com/PepperlFuchs/pf_lidar_ros_driver</url>
+
+  <build_depend>libpcl-all-dev</build_depend>
+  <exec_depend>libpcl-all</exec_depend>
+  <exec_depend>pf_description</exec_depend>
+  <depend>pf_interfaces</depend>
+  <depend>curlpp-dev</depend>
+  <depend>laser_geometry</depend>
+  <depend>libjsoncpp-dev</depend>
+  <depend>pcl_conversions</depend>
+  <depend>pcl_ros</depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2</depend>
+  <depend>yaml-cpp</depend>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
