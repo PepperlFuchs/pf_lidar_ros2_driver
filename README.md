@@ -1,9 +1,11 @@
-## ROS drivers for R2000 and R2300 laser scanners
+## ROS2 driver for R2000 and R2300 laser scanners
 
 ![Build Status](https://github.com/PepperlFuchs/pf_lidar_ros2_driver/actions/workflows/main.yml/badge.svg?branch=main)
 
 **Required platform:**  
 Ubuntu 20.04 / ROS Foxy OR Ubuntu 20.04 / ROS Galactic  OR Ubuntu 22.04 / ROS Humble
+
+Note: The ROS1 driver is available here: https://github.com/PepperlFuchs/pf_lidar_ros_driver
   
 **Clone the repository:**  
 Clone the repository in the `src` folder of your ROS workspace
