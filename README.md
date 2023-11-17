@@ -45,9 +45,9 @@ With R2300, the term scan refers to a contiguous group of measurements spanning 
 sector. Depending on the orientation of the mirrors on the cube, the scans may be taken in the same or slightly different
 layers.  
   
-In current sensors, all four mirrors are inclined slightly differently so that scans are taken at the following vertical
+In R2300 4-layer sensors, all four mirrors are inclined slightly differently so that scans are taken at the following vertical
 angle (relative to the mounting plane). Note that the layers are numbered in the order they are scanned during one
-turn. This is (yet) not strictly from bottom to top:
+turn. This is not strictly from bottom to top:
 
 | **Layer index** | **Angle** | **Description** |
 |-----------------|-----------|-----------------|
