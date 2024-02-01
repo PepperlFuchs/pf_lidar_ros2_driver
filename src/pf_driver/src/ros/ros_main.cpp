@@ -14,6 +14,7 @@ int main(int argc, char* argv[])
 
   std::string device, transport_str, scanner_ip, port, topic, frame_id, packet_type;
   int samples_per_scan, start_angle, max_num_points_scan, watchdogtimeout, num_layers;
+  port = "0";
   num_layers = 0;
   bool watchdog, apply_correction = 0;
 

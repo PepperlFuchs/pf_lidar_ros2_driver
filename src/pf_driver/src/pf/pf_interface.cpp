@@ -56,7 +56,7 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
 
   if (info->handle_type == HandleInfo::HANDLE_TYPE_UDP)
   {
-    transport_ = std::make_unique<UDPTransport>(info->hostname);
+    transport_ = std::make_unique<UDPTransport>(info->hostname, info->port);
     if (!transport_->connect())
     {
       RCLCPP_ERROR(node_->get_logger(), "Unable to establish UDP connection");
