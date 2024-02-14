@@ -361,7 +361,7 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     }
     else if (parameter.get_name() == "start_angle")
     {
-      config_->start_angle = parameter.as_double();
+      config_->start_angle = parameter.as_int();
     }
     else if (parameter.get_name() == "max_num_points_scan")
     {
