@@ -21,7 +21,7 @@ def generate_launch_description():
 
     node = Node(
         package='pf_driver',
-        name='ros_main',
+        name='pf_r2300',
         executable='ros_main',
         output='screen',
         parameters=[config]

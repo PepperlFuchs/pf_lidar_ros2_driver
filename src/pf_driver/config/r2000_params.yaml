@@ -1,4 +1,4 @@
-ros_main:
+pf_r2000:
   ros__parameters:
     transport: "udp"
     scanner_ip: "10.0.10.9"
@@ -7,7 +7,7 @@ ros_main:
     start_angle: -1800000
     max_num_points_scan: 0
     packet_type: "C"
-    scan_topic: "/scan"
+    scan_topic: "/pf/scan"
     frame_id: "scanner_link"
     watchdogtimeout: 60000
     watchdog: true
