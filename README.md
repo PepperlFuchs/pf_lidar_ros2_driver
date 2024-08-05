@@ -3,7 +3,7 @@
 ![Build Status](https://github.com/PepperlFuchs/pf_lidar_ros2_driver/actions/workflows/main.yml/badge.svg?branch=main)
 
 **Prerequisites:**  
-OMDxxx-R2000 Hardware & Firmware >= 1.50 (No support of OBDxxx-R2000 for ROS driver)  
+OMDxxx-R2000 Hardware & Firmware >= 1.50 (No support of OBDxxx-R2000 devices)  
 OMDxxx-R2300 Hardware >= 0.95, Firmware >= 0.97
 
 **Required platform:**  
