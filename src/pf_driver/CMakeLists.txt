@@ -65,6 +65,7 @@ target_link_libraries(ros_main
   yaml-cpp
 )
 ament_target_dependencies(ros_main
+  ament_index_cpp
   rclcpp
   pf_interfaces
   laser_geometry
