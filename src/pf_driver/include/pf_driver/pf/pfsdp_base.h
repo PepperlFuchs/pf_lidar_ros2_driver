@@ -14,9 +14,10 @@
 
 #pragma once
 
-#include <mutex>
-#include <memory>
+#include <cstdint>
 #include <functional>
+#include <memory>
+#include <mutex>
 
 #include <rclcpp/node.hpp>
 #include <boost/algorithm/string.hpp>

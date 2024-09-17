@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.7)
 project(pf_driver)
 
-find_package(ament_cmake REQUIRED)
+set(CMAKE_POLICY_DEFAULT_CMP0144 OLD)
 
+find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(pf_interfaces)
 find_package(laser_geometry REQUIRED)
 find_package(pcl_conversions REQUIRED)
@@ -12,7 +14,6 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(pf_interfaces REQUIRED)
-
 find_package(Boost REQUIRED COMPONENTS  thread system)
 if(NOT TARGET JsonCpp::JsonCpp)
   find_package(jsoncpp REQUIRED)
@@ -58,12 +59,15 @@ add_executable(ros_main
   ${${PROJECT_NAME}_SOURCES}
   src/ros/ros_main.cpp
 )
+
 target_link_libraries(ros_main
+  ament_index_cpp::ament_index_cpp
   curlpp
   curl
   jsoncpp
   yaml-cpp
 )
+
 ament_target_dependencies(ros_main
   rclcpp
   pf_interfaces
@@ -99,6 +103,7 @@ if (BUILD_TESTING)
     $<INSTALL_INTERFACE:include>
   )
   target_link_libraries(${PROJECT_NAME}_test
+    ament_index_cpp::ament_index_cpp
     curlpp
     curl
     jsoncpp
