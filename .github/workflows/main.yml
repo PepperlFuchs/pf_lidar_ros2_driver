@@ -9,13 +9,12 @@ jobs:
     strategy:
       matrix:
         env:
-#          - {ROS_DISTRO: foxy, ROS_REPO: testing}
-#          - {ROS_DISTRO: foxy, CATKIN_LINT: true}
-#          - {ROS_DISTRO: foxy, CLANG_FORMAT_CHECK: file}
+          - {ROS_DISTRO: foxy, ROS_REPO: testing}
+          - {ROS_DISTRO: foxy, CATKIN_LINT: true}
+          - {ROS_DISTRO: foxy, CLANG_FORMAT_CHECK: file}
           - {ROS_DISTRO: galactic}
           - {ROS_DISTRO: humble}
           - {ROS_DISTRO: iron}
-          - {ROS_DISTRO: jazzy}          
     env:
       CCACHE_DIR: /github/home/.ccache # Directory for ccache (and how we enable ccache in industrial_ci)
     runs-on: ubuntu-latest

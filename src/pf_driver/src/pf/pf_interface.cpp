@@ -286,49 +286,60 @@ void PFInterface::add_pf_services(void)
 
   svcname = basename + "get_protocol_info";
   info_service_ = node_->create_service<pf_interfaces::srv::PfsdpGetProtocolInfo>(
-      svcname.c_str(), std::bind(&pfsdp_get_protocol_info, this, std::placeholders::_1, std::placeholders::_2));
+      svcname.c_str(), std::bind(&pfsdp_get_protocol_info, this, std::placeholders::_1,
+          std::placeholders::_2, std::placeholders::_3));
 
   svcname = basename + "reboot_device";
   reboot_service_ = node_->create_service<pf_interfaces::srv::PfsdpRebootDevice>(
-      svcname.c_str(), std::bind(&pfsdp_reboot_device, this, std::placeholders::_1, std::placeholders::_2));
+      svcname.c_str(), std::bind(&pfsdp_reboot_device, this, std::placeholders::_1,
+          std::placeholders::_2, std::placeholders::_3));
 
   svcname = basename + "factory_reset";
   factory_service_ = node_->create_service<pf_interfaces::srv::PfsdpFactoryReset>(
-      svcname.c_str(), std::bind(&pfsdp_factory_reset, this, std::placeholders::_1, std::placeholders::_2));
+      svcname.c_str(), std::bind(&pfsdp_factory_reset, this, std::placeholders::_1,
+          std::placeholders::_2, std::placeholders::_3));
 
   svcname = basename + "list_parameters";
   listparams_service_ = node_->create_service<pf_interfaces::srv::PfsdpListParameters>(
-      svcname.c_str(), std::bind(&pfsdp_list_parameters, this, std::placeholders::_1, std::placeholders::_2));
+      svcname.c_str(), std::bind(&pfsdp_list_parameters, this, std::placeholders::_1,
+          std::placeholders::_2, std::placeholders::_3));
 
   svcname = basename + "get_parameter";
   getparam_service_ = node_->create_service<pf_interfaces::srv::PfsdpGetParameter>(
-      svcname.c_str(), std::bind(&pfsdp_get_parameter, this, std::placeholders::_1, std::placeholders::_2));
+      svcname.c_str(), std::bind(&pfsdp_get_parameter, this, std::placeholders::_1,
+          std::placeholders::_2, std::placeholders::_3));
 
   svcname = basename + "set_parameter";
   setparam_service_ = node_->create_service<pf_interfaces::srv::PfsdpSetParameter>(
-      svcname.c_str(), std::bind(&pfsdp_set_parameter, this, std::placeholders::_1, std::placeholders::_2));
+      svcname.c_str(), std::bind(&pfsdp_set_parameter, this, std::placeholders::_1,
+          std::placeholders::_2, std::placeholders::_3));
 
   svcname = basename + "reset_parameter";
   resetparam_service_ = node_->create_service<pf_interfaces::srv::PfsdpResetParameter>(
-      svcname.c_str(), std::bind(&pfsdp_reset_parameter, this, std::placeholders::_1, std::placeholders::_2));
+      svcname.c_str(), std::bind(&pfsdp_reset_parameter, this, std::placeholders::_1,
+          std::placeholders::_2, std::placeholders::_3));
 
   if (has_iq_parameters_)
   {
     svcname = basename + "list_iq_parameters";
     listiqparams_service_ = node_->create_service<pf_interfaces::srv::PfsdpListIqParameters>(
-        svcname.c_str(), std::bind(&pfsdp_list_iq_parameters, this, std::placeholders::_1, std::placeholders::_2));
+        svcname.c_str(), std::bind(&pfsdp_list_iq_parameters, this, std::placeholders::_1,
+            std::placeholders::_2, std::placeholders::_3));
 
     svcname = basename + "get_iq_parameter";
     getiqparam_service_ = node_->create_service<pf_interfaces::srv::PfsdpGetIqParameter>(
-        svcname.c_str(), std::bind(&pfsdp_get_iq_parameter, this, std::placeholders::_1, std::placeholders::_2));
+        svcname.c_str(), std::bind(&pfsdp_get_iq_parameter, this, std::placeholders::_1,
+            std::placeholders::_2, std::placeholders::_3));
 
     svcname = basename + "set_iq_parameter";
     setiqparam_service_ = node_->create_service<pf_interfaces::srv::PfsdpSetIqParameter>(
-        svcname.c_str(), std::bind(&pfsdp_set_iq_parameter, this, std::placeholders::_1, std::placeholders::_2));
+        svcname.c_str(), std::bind(&pfsdp_set_iq_parameter, this, std::placeholders::_1,
+            std::placeholders::_2, std::placeholders::_3));
 
     svcname = basename + "reset_iq_parameter";
     resetiqparam_service_ = node_->create_service<pf_interfaces::srv::PfsdpResetIqParameter>(
-        svcname.c_str(), std::bind(&pfsdp_reset_iq_parameter, this, std::placeholders::_1, std::placeholders::_2));
+        svcname.c_str(), std::bind(&pfsdp_reset_iq_parameter, this, std::placeholders::_1,
+            std::placeholders::_2, std::placeholders::_3));
   }
 }
 
