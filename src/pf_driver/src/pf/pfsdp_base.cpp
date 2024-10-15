@@ -5,12 +5,58 @@
 
 #include "pf_driver/pf/pfsdp_base.h"
 #include "pf_driver/pf/parser_utils.h"
+#include "pf_driver/pf/http_helpers/http_helpers.h"
 
 PFSDPBase::PFSDPBase(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<HandleInfo> info,
                      std::shared_ptr<ScanConfig> config, std::shared_ptr<ScanParameters> params)
   : http_interface(new HTTPInterface(info->hostname, "cmd")), node_(node), info_(info), config_(config), params_(params)
 {
 }
+
+
+void PFSDPBase::copy_status_from_json(int32_t& error_code, std::string& error_text, Json::Value json_resp)
+{
+  error_code = json_resp["error_code"].asInt();
+  error_text = json_resp["error_text"].asString();
+}
+
+void PFSDPBase::get_parameter(const char* cmd, const std::string& name, std::string& value, int32_t& error_code, std::string& error_text)
+{
+  Json::Value json_resp = http_interface->get(cmd, { KV("list", name) });
+
+  copy_status_from_json(error_code, error_text, json_resp);
+
+  if (error_code == 0)
+  {
+    if (json_resp[name].isArray())
+    {
+      value = http_helpers::from_array(json_resp[name]);
+    }
+    else
+    {
+      value = json_resp[name].asString();
+    }
+  }
+  else
+  {
+    value = std::string("");
+  }
+}
+
+void PFSDPBase::set_parameter(const char* cmd, const std::string& name, const std::string& value, int32_t& error_code, std::string& error_text)
+{
+  Json::Value json_resp = http_interface->get(cmd, { KV(name, value) });
+
+  copy_status_from_json(error_code, error_text, json_resp);
+}
+
+void PFSDPBase::reset_parameter(const char* cmd, const std::string& name, int32_t& error_code, std::string& error_text)
+{
+  Json::Value json_resp = http_interface->get(cmd, { KV("list", name) });
+
+  copy_status_from_json(error_code, error_text, json_resp);
+}
+
 
 const std::map<std::string, std::string> PFSDPBase::get_request(const std::string& command,
                                                                 const std::vector<std::string>& json_keys,
@@ -23,19 +69,53 @@ const std::map<std::string, std::string> PFSDPBase::get_request(const std::strin
                                                                 const std::vector<std::string>& json_keys,
                                                                 const param_map_type& query)
 {
-  const std::string err_code = "error_code";
-  const std::string err_text = "error_text";
-  const std::string err_http = "error_http";
-  std::vector<std::string> keys = { err_code, err_text };
-  keys.insert(keys.end(), json_keys.begin(), json_keys.end());
-  std::map<std::string, std::string> json_resp = http_interface->get(keys, command, query);
+  Json::Value json_resp = http_interface->get(command, query);
 
-  if (!check_error(json_resp, err_code, err_text, err_http))
+  const int error_code = json_resp["error_code"].asInt();
+  const std::string error_text(json_resp["error_text"].asString());
+
+  // check if HTTP has an error
+  if (error_code < 0)
   {
+    std::cerr << "HTTP ERROR: " << error_text << std::endl;
+
+    if (is_connection_failure(error_text))
+    {
+      if (handle_connection_failure)
+      {
+        handle_connection_failure();
+      }
+    }
     return std::map<std::string, std::string>();
   }
 
-  return json_resp;
+  // check if PFSDP has an error
+  if (error_code != 0 || error_text.compare("success") != 0)
+
+  {
+    std::cout << "protocol error: " << error_code << " " << error_text << std::endl;
+    return std::map<std::string, std::string>();
+  }
+
+  // Flatten values
+  std::map<std::string, std::string> json_kv;
+  for (std::string key : json_keys)
+  {
+    try
+    {
+      if (json_resp[key].isArray())
+        json_kv[key] = http_helpers::from_array(json_resp[key]);
+      else
+        json_kv[key] = json_resp[key].asString();
+    }
+    catch (std::exception& e)
+    {
+      std::cout << "Invalid command or parameter (" << key << ") requested." << std::endl;
+      return std::map<std::string, std::string>();
+    }
+  }
+
+  return json_kv;
 }
 
 bool PFSDPBase::get_request_bool(const std::string& command, const std::vector<std::string>& json_keys,
@@ -61,67 +141,44 @@ bool PFSDPBase::is_connection_failure(const std::string& http_error)
   return false;
 }
 
-bool PFSDPBase::check_error(std::map<std::string, std::string>& mp, const std::string& err_code,
-                            const std::string& err_text, const std::string& err_http)
-{
-  const std::string http_error = mp[err_http];
-  const std::string code = mp[err_code];
-  const std::string text = mp[err_text];
-
-  // remove error related key-value pairs
-  mp.erase(err_http);
-  mp.erase(err_code);
-  mp.erase(err_text);
-
-  // check if HTTP has an error
-  if (http_error.compare(std::string("OK")))
-  {
-    std::cerr << "HTTP ERROR: " << http_error << std::endl;
-    if (is_connection_failure(http_error))
-    {
-      if (handle_connection_failure)
-      {
-        handle_connection_failure();
-      }
-    }
-    return false;
-  }
-
-  // check if 'error_code' and 'error_text' does not exist in the response
-  // this happens in case of invalid command
-  if (!code.compare("--COULD NOT RETRIEVE VALUE--") || !text.compare("--COULD NOT RETRIEVE VALUE--"))
-  {
-    std::cout << "Invalid command or parameter requested." << std::endl;
-    return false;
-  }
-  // check for error messages in protocol response
-  if (code.compare("0") || text.compare("success"))
-  {
-    std::cout << "protocol error: " << code << " " << text << std::endl;
-    return false;
-  }
-  return true;
-}
-
 void PFSDPBase::set_connection_failure_cb(std::function<void()> callback)
 {
   handle_connection_failure = callback;
 }
 
-const std::vector<std::string> PFSDPBase::list_parameters()
+void PFSDPBase::list_parameters(const char* cmd, const char* out, std::vector<std::string>& params, int32_t& error_code, std::string& error_text)
 {
-  auto resp = get_request("list_parameters", { "parameters" });
-  return parser_utils::split(resp["parameters"]);
+  Json::Value json_resp = http_interface->get(cmd, { });
+
+  copy_status_from_json(error_code, error_text, json_resp);
+
+  if (error_code == 0)
+  {
+    const int sz = json_resp[out].size();
+    params.clear();
+    for (int i=0; i<sz; ++i)
+    {
+      params.push_back(json_resp[out][i].asString());
+    }
+  }
+  else
+  {
+    params = std::vector<std::string>();
+  }
 }
 
-bool PFSDPBase::reboot_device()
+void PFSDPBase::reboot(int32_t& error_code, std::string& error_text)
 {
-  return get_request_bool("reboot_device");
+  Json::Value json_resp = http_interface->get("reboot_device", { });
+
+  copy_status_from_json(error_code, error_text, json_resp);
 }
 
-void PFSDPBase::factory_reset()
+void PFSDPBase::factory(int32_t& error_code, std::string& error_text)
 {
-  get_request("factory_reset");
+  Json::Value json_resp = http_interface->get("factory_reset", { });
+
+  copy_status_from_json(error_code, error_text, json_resp);
 }
 
 bool PFSDPBase::release_handle(const std::string& handle)
@@ -130,19 +187,38 @@ bool PFSDPBase::release_handle(const std::string& handle)
   return true;
 }
 
+void PFSDPBase::info(std::string& protocol_name, int32_t& version_major, int32_t& version_minor,
+    std::vector<std::string>& commands, int32_t& error_code, std::string& error_text)
+{
+  Json::Value json_resp = http_interface->get("get_protocol_info", { });
+
+  copy_status_from_json(error_code, error_text, json_resp);
+
+  if (error_code == 0)
+  {
+    version_major = json_resp["version_major"].asInt();
+    version_minor = json_resp["version_minor"].asInt();
+    protocol_name = json_resp["protocol_name"].asString();
+
+    const int sz = json_resp["commands"].size();
+    commands.clear();
+    for (int i=0; i<sz; ++i)
+    {
+      commands.push_back(json_resp["commands"][i].asString());
+    }
+  }
+}
+
 ProtocolInfo PFSDPBase::get_protocol_info()
 {
   ProtocolInfo opi;
-  auto resp = get_request("get_protocol_info", { "protocol_name", "version_major", "version_minor", "commands" });
-  if (resp.empty())
-  {
-    opi.isError = true;
-    return opi;
-  }
 
-  opi.version_major = atoi(resp["version_major"].c_str());
-  opi.version_minor = atoi(resp["version_minor"].c_str());
-  opi.protocol_name = resp["protocol_name"];
+  int32_t error_code;
+  std::string error_text;
+
+  info(opi.protocol_name, opi.version_major, opi.version_minor,
+      opi.commands, error_code, error_text);
+
   opi.device_family = get_parameter_int("device_family");
 
   return opi;
@@ -318,28 +394,31 @@ rcl_interfaces::msg::SetParametersResult PFSDPBase::reconfig_callback(const std:
   return result;
 }
 
+void PFSDPBase::pfsdp_init(const rclcpp::Parameter& parameter)
+{
+  std::vector<std::string> pfsdp_init = parameter.as_string_array();
+  for (int i=0; i<pfsdp_init.size(); ++i)
+  {
+    size_t eq = pfsdp_init[i].find_first_of("=");
+    if (eq != std::string::npos)
+    {
+      std::string name = pfsdp_init[i].substr(0, eq);
+      std::string value = pfsdp_init[i].substr(eq+1, std::string::npos);
+
+      (void)set_parameter({ KV(name, value) });
+    }
+  }
+}
+
 bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& parameters)
 {
   bool successful = true;
 
   for (const auto& parameter : parameters)
   {
-    if (parameter.get_name() == "ip_mode" || parameter.get_name() == "scan_frequency" ||
-        parameter.get_name() == "subnet_mask" || parameter.get_name() == "gateway" ||
-        parameter.get_name() == "scan_direction" || parameter.get_name() == "user_tag" ||
-        parameter.get_name() == "ip_address" || parameter.get_name() == "subnet_mask" ||
-        parameter.get_name() == "gateway")
+    if (parameter.get_name() == "pfsdp_init")
     {
-      return set_parameter({ KV(parameter.get_name(), parameter.value_to_string()) });
-    }
-    else if (parameter.get_name() == "ip_address")
-    {
-      info_->hostname = parameter.as_string();
-      return set_parameter({ KV(parameter.get_name(), parameter.value_to_string()) });
-    }
-    else if (parameter.get_name() == "packet_crc")
-    {
-      return set_parameter({ KV(parameter.get_name(), parameter.as_int()) });
+      pfsdp_init(parameter);
     }
     else if (parameter.get_name() == "port")
     {
@@ -370,10 +449,6 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     else if (parameter.get_name() == "skip_scans")
     {
       config_->skip_scans = parameter.as_int();
-    }
-    else if (parameter.get_name() == "locator_indication")
-    {
-      return set_parameter({ KV(parameter.get_name(), parameter.as_bool() ? "on" : "off") });
     }
   }
 

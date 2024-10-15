@@ -77,55 +77,10 @@ std::string PFSDP_2300::get_start_angle_str()
 
 void PFSDP_2300::declare_specific_parameters()
 {
-  float measure_start_angle, measure_stop_angle, pilot_start_angle, pilot_stop_angle;
-  std::string layer_enable;
-  bool pilot_laser;
-
-  if (!node_->has_parameter("measure_start_angle"))
-  {
-    node_->declare_parameter("measure_start_angle", measure_start_angle);
-  }
-  if (!node_->has_parameter("measure_stop_angle"))
-  {
-    node_->declare_parameter("measure_stop_angle", measure_stop_angle);
-  }
-  if (!node_->has_parameter("pilot_start_angle"))
-  {
-    node_->declare_parameter("pilot_start_angle", pilot_start_angle);
-  }
-  if (!node_->has_parameter("pilot_stop_angle"))
-  {
-    node_->declare_parameter("pilot_stop_angle", pilot_stop_angle);
-  }
-  if (!node_->has_parameter("layer_enable"))
-  {
-    node_->declare_parameter("layer_enable", layer_enable);
-  }
-  if (!node_->has_parameter("pilot_laser"))
-  {
-    node_->declare_parameter("pilot_laser", pilot_laser);
-  }
 }
 
 bool PFSDP_2300::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& parameters)
 {
   bool successful = PFSDPBase::reconfig_callback_impl(parameters);
-
-  for (const auto& parameter : parameters)
-  {
-    std::cout << parameter.get_name() << " " << parameter.value_to_string() << std::endl;
-    if (parameter.get_name() == "measure_start_angle" || parameter.get_name() == "measure_stop_angle" ||
-        parameter.get_name() == "pilot_start_angle" || parameter.get_name() == "pilot_stop_angle" ||
-        parameter.get_name() == "layer_enable")
-    {
-      std::cout << parameter.get_name() << " " << parameter.value_to_string() << std::endl;
-      return set_parameter({ KV(parameter.get_name(), parameter.value_to_string()) });
-    }
-    else if (parameter.get_name() == "pilot_laser")
-    {
-      return set_parameter({ KV(parameter.get_name(), parameter.as_bool() ? "on" : "off") });
-    }
-  }
-
   return successful;
 }
