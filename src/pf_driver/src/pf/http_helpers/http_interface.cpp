@@ -6,8 +6,7 @@ HTTPInterface::HTTPInterface(std::string host, std::string path) : host(std::mov
 {
 }
 
-const Json::Value HTTPInterface::get(const std::string& command,
-    const std::initializer_list<param_type>& list)
+const Json::Value HTTPInterface::get(const std::string& command, const std::initializer_list<param_type>& list)
 {
   CurlResource res(host);
   res.append_path(base_path);
@@ -16,8 +15,7 @@ const Json::Value HTTPInterface::get(const std::string& command,
   return get_(res);
 }
 
-const Json::Value HTTPInterface::get(const std::string& command,
-    const param_map_type& params)
+const Json::Value HTTPInterface::get(const std::string& command, const param_map_type& params)
 {
   CurlResource res(host);
   res.append_path(base_path);

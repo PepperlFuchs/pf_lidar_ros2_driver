@@ -68,13 +68,17 @@ public:
 
   void set_connection_failure_cb(std::function<void()> callback);
 
-  void list_parameters(const char* cmd, const char* out, std::vector<std::string>& params, int32_t& error_code, std::string& error_text);
-  void get_parameter(const char* cmd, const std::string& name, std::string& value, int32_t& error_code, std::string& error_text);
-  void set_parameter(const char* cmd, const std::string& name, const std::string& value, int32_t& error_code, std::string& error_text);
+  void list_parameters(const char* cmd, const char* out, std::vector<std::string>& params, int32_t& error_code,
+                       std::string& error_text);
+  void get_parameter(const char* cmd, const std::string& name, std::string& value, int32_t& error_code,
+                     std::string& error_text);
+  void set_parameter(const char* cmd, const std::string& name, const std::string& value, int32_t& error_code,
+                     std::string& error_text);
   void reset_parameter(const char* cmd, const std::string& name, int32_t& error_code, std::string& error_text);
   void reboot(int32_t& error_code, std::string& error_text);
   void factory(int32_t& error_code, std::string& error_text);
-  void info(std::string& n, int32_t& major, int32_t&minor, std::vector<std::string>& cmds, int32_t& error_code, std::string& error_text);
+  void info(std::string& n, int32_t& major, int32_t& minor, std::vector<std::string>& cmds, int32_t& error_code,
+            std::string& error_text);
 
   ProtocolInfo get_protocol_info();
 

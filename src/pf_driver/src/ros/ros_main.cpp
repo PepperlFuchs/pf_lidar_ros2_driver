@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
   }
   node->get_parameter("pfsdp_init", pfsdp_init);
   RCLCPP_INFO(node->get_logger(), "pfsdp_init.size: %d", (int)pfsdp_init.size());
-  for (int i=0; i<pfsdp_init.size(); ++i)
+  for (int i = 0; i < pfsdp_init.size(); ++i)
   {
     RCLCPP_INFO(node->get_logger(), "pfsdp_init[%d]: %s", i, pfsdp_init[i].c_str());
   }

@@ -43,10 +43,13 @@ public:
   void pfsdp_reboot(int32_t& error_code, std::string& error_text);
   void pfsdp_factory(int32_t& error_code, std::string& error_text);
   void pfsdp_info(std::string& protocol_name, int32_t& version_major, int32_t& version_minor,
-        std::vector<std::string>& commands, int32_t& error_code, std::string& error_text);
-  void pfsdp_list(const char* cmd, const char* out, std::vector<std::string>& params, int32_t& error_code, std::string& error_text);
-  void pfsdp_get(const char* cmd, const std::string& name, std::string& value, int32_t& error_code, std::string& error_text);
-  void pfsdp_set(const char* cmd, const std::string& name, const std::string& value, int32_t& error_code, std::string& error_text);
+                  std::vector<std::string>& commands, int32_t& error_code, std::string& error_text);
+  void pfsdp_list(const char* cmd, const char* out, std::vector<std::string>& params, int32_t& error_code,
+                  std::string& error_text);
+  void pfsdp_get(const char* cmd, const std::string& name, std::string& value, int32_t& error_code,
+                 std::string& error_text);
+  void pfsdp_set(const char* cmd, const std::string& name, const std::string& value, int32_t& error_code,
+                 std::string& error_text);
   void pfsdp_reset(const char* cmd, const std::string& name, int32_t& error_code, std::string& error_text);
 
   std::vector<std::string> pfsdp_list_iq(void);

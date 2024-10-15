@@ -13,14 +13,14 @@ PFSDPBase::PFSDPBase(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<HandleI
 {
 }
 
-
 void PFSDPBase::copy_status_from_json(int32_t& error_code, std::string& error_text, Json::Value json_resp)
 {
   error_code = json_resp["error_code"].asInt();
   error_text = json_resp["error_text"].asString();
 }
 
-void PFSDPBase::get_parameter(const char* cmd, const std::string& name, std::string& value, int32_t& error_code, std::string& error_text)
+void PFSDPBase::get_parameter(const char* cmd, const std::string& name, std::string& value, int32_t& error_code,
+                              std::string& error_text)
 {
   Json::Value json_resp = http_interface->get(cmd, { KV("list", name) });
 
@@ -43,7 +43,8 @@ void PFSDPBase::get_parameter(const char* cmd, const std::string& name, std::str
   }
 }
 
-void PFSDPBase::set_parameter(const char* cmd, const std::string& name, const std::string& value, int32_t& error_code, std::string& error_text)
+void PFSDPBase::set_parameter(const char* cmd, const std::string& name, const std::string& value, int32_t& error_code,
+                              std::string& error_text)
 {
   Json::Value json_resp = http_interface->get(cmd, { KV(name, value) });
 
@@ -56,7 +57,6 @@ void PFSDPBase::reset_parameter(const char* cmd, const std::string& name, int32_
 
   copy_status_from_json(error_code, error_text, json_resp);
 }
-
 
 const std::map<std::string, std::string> PFSDPBase::get_request(const std::string& command,
                                                                 const std::vector<std::string>& json_keys,
@@ -146,9 +146,10 @@ void PFSDPBase::set_connection_failure_cb(std::function<void()> callback)
   handle_connection_failure = callback;
 }
 
-void PFSDPBase::list_parameters(const char* cmd, const char* out, std::vector<std::string>& params, int32_t& error_code, std::string& error_text)
+void PFSDPBase::list_parameters(const char* cmd, const char* out, std::vector<std::string>& params, int32_t& error_code,
+                                std::string& error_text)
 {
-  Json::Value json_resp = http_interface->get(cmd, { });
+  Json::Value json_resp = http_interface->get(cmd, {});
 
   copy_status_from_json(error_code, error_text, json_resp);
 
@@ -156,7 +157,7 @@ void PFSDPBase::list_parameters(const char* cmd, const char* out, std::vector<st
   {
     const int sz = json_resp[out].size();
     params.clear();
-    for (int i=0; i<sz; ++i)
+    for (int i = 0; i < sz; ++i)
     {
       params.push_back(json_resp[out][i].asString());
     }
@@ -169,14 +170,14 @@ void PFSDPBase::list_parameters(const char* cmd, const char* out, std::vector<st
 
 void PFSDPBase::reboot(int32_t& error_code, std::string& error_text)
 {
-  Json::Value json_resp = http_interface->get("reboot_device", { });
+  Json::Value json_resp = http_interface->get("reboot_device", {});
 
   copy_status_from_json(error_code, error_text, json_resp);
 }
 
 void PFSDPBase::factory(int32_t& error_code, std::string& error_text)
 {
-  Json::Value json_resp = http_interface->get("factory_reset", { });
+  Json::Value json_resp = http_interface->get("factory_reset", {});
 
   copy_status_from_json(error_code, error_text, json_resp);
 }
@@ -188,9 +189,9 @@ bool PFSDPBase::release_handle(const std::string& handle)
 }
 
 void PFSDPBase::info(std::string& protocol_name, int32_t& version_major, int32_t& version_minor,
-    std::vector<std::string>& commands, int32_t& error_code, std::string& error_text)
+                     std::vector<std::string>& commands, int32_t& error_code, std::string& error_text)
 {
-  Json::Value json_resp = http_interface->get("get_protocol_info", { });
+  Json::Value json_resp = http_interface->get("get_protocol_info", {});
 
   copy_status_from_json(error_code, error_text, json_resp);
 
@@ -202,7 +203,7 @@ void PFSDPBase::info(std::string& protocol_name, int32_t& version_major, int32_t
 
     const int sz = json_resp["commands"].size();
     commands.clear();
-    for (int i=0; i<sz; ++i)
+    for (int i = 0; i < sz; ++i)
     {
       commands.push_back(json_resp["commands"][i].asString());
     }
@@ -216,8 +217,7 @@ ProtocolInfo PFSDPBase::get_protocol_info()
   int32_t error_code;
   std::string error_text;
 
-  info(opi.protocol_name, opi.version_major, opi.version_minor,
-      opi.commands, error_code, error_text);
+  info(opi.protocol_name, opi.version_major, opi.version_minor, opi.commands, error_code, error_text);
 
   opi.device_family = get_parameter_int("device_family");
 
@@ -397,13 +397,13 @@ rcl_interfaces::msg::SetParametersResult PFSDPBase::reconfig_callback(const std:
 void PFSDPBase::pfsdp_init(const rclcpp::Parameter& parameter)
 {
   std::vector<std::string> pfsdp_init = parameter.as_string_array();
-  for (int i=0; i<pfsdp_init.size(); ++i)
+  for (int i = 0; i < pfsdp_init.size(); ++i)
   {
     size_t eq = pfsdp_init[i].find_first_of("=");
     if (eq != std::string::npos)
     {
       std::string name = pfsdp_init[i].substr(0, eq);
-      std::string value = pfsdp_init[i].substr(eq+1, std::string::npos);
+      std::string value = pfsdp_init[i].substr(eq + 1, std::string::npos);
 
       (void)set_parameter({ KV(name, value) });
     }
