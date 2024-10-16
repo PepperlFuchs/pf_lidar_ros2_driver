@@ -284,12 +284,17 @@ void PFInterface::add_pf_services(void)
   std::string basename = std::string(node_->get_namespace()) + std::string(node_->get_name()) + std::string("/pfsdp_");
   std::string svcname;
 
+  std::shared_ptr<PFServices>pfServices = std::make_shared<PFServices>(this);
+
   svcname = basename + "get_protocol_info";
   info_service_ = node_->create_service<pf_interfaces::srv::PfsdpGetProtocolInfo>(
       //svcname.c_str(), std::bind(&pfsdp_get_protocol_info, this, std::placeholders::_1, std::placeholders::_2));
       //svcname.c_str(), std::bind(&pfsdp_get_protocol_info, this, std::placeholders::_1,
       //    std::placeholders::_2, std::placeholders::_3));
-      svcname.c_str(), &pfsdp_get_protocol_info);
+      //svcname.c_str(), &pfsdp_get_protocol_info);
+      //svcname.c_str(), std::bind(&pfsdp_get_protocol_info, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+      //svcname.c_str(), std::bind(&PFServices::pfsdp_get_protocol_info, this, std::placeholders::_1, std::placeholders::_2));
+      svcname.c_str(), std::bind(&PFServices::pfsdp_get_protocol_info, pfServices, std::placeholders::_1, std::placeholders::_2));
 
   //svcname = basename + "reboot_device";
   //reboot_service_ = node_->create_service<pf_interfaces::srv::PfsdpRebootDevice>(

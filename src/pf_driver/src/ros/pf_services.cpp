@@ -23,14 +23,14 @@ void pfsdp_factory_reset(//PFInterface* pf,
   printf("pfsdp_factory_reset() called");
 }
 
-void pfsdp_get_protocol_info(//PFInterface* pf,
+void pfsdp_get_protocol_info(PFInterface* pf,
                              //const std::shared_ptr<rmw_request_id_t> request_header,
                              const std::shared_ptr<pf_interfaces::srv::PfsdpGetProtocolInfo::Request> request,
                              std::shared_ptr<pf_interfaces::srv::PfsdpGetProtocolInfo::Response> response)
 {
-  //pf->pfsdp_info(response->protocol_name, response->version_major, response->version_minor, response->commands,
-  //               response->error_code, response->error_text);
-  printf("pfsdp_get_protocol_info() called");
+  pf->pfsdp_info(response->protocol_name, response->version_major, response->version_minor, response->commands,
+                 response->error_code, response->error_text);
+  //printf("pfsdp_get_protocol_info() called");
 }
 
 void pfsdp_list_parameters(//PFInterface* pf,

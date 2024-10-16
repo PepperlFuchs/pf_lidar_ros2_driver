@@ -27,7 +27,7 @@ void pfsdp_factory_reset(//PFInterface* pf,
                          const std::shared_ptr<pf_interfaces::srv::PfsdpFactoryReset::Request> request,
                          std::shared_ptr<pf_interfaces::srv::PfsdpFactoryReset::Response> response);
 
-void pfsdp_get_protocol_info(//PFInterface* pf,
+void pfsdp_get_protocol_info(PFInterface* pf,
                              //const std::shared_ptr<rmw_request_id_t> request_header,
                              const std::shared_ptr<pf_interfaces::srv::PfsdpGetProtocolInfo::Request> request,
                              std::shared_ptr<pf_interfaces::srv::PfsdpGetProtocolInfo::Response> response);
@@ -71,3 +71,23 @@ void pfsdp_reset_iq_parameter(//PFInterface* pf,
                               //const std::shared_ptr<rmw_request_id_t> request_header,
                               const std::shared_ptr<pf_interfaces::srv::PfsdpResetIqParameter::Request> request,
                               std::shared_ptr<pf_interfaces::srv::PfsdpResetIqParameter::Response> response);
+
+
+class PFServices
+{
+public:
+  PFServices(PFInterface *pf) : pf_(pf)
+  {
+  }
+
+  void pfsdp_get_protocol_info(const std::shared_ptr<pf_interfaces::srv::PfsdpGetProtocolInfo::Request> request,
+                               std::shared_ptr<pf_interfaces::srv::PfsdpGetProtocolInfo::Response> response)
+  {
+    pf_->pfsdp_info(response->protocol_name, response->version_major, response->version_minor, response->commands,
+                    response->error_code, response->error_text);
+  }
+
+private:
+  PFInterface *pf_ = nullptr;
+};
+
