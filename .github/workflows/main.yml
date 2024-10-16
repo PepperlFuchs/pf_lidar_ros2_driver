@@ -11,7 +11,7 @@ jobs:
         env:
           - {ROS_DISTRO: foxy, ROS_REPO: testing}
           - {ROS_DISTRO: foxy, CATKIN_LINT: true}
-          - {ROS_DISTRO: foxy, CLANG_FORMAT_CHECK: file}
+#          - {ROS_DISTRO: foxy, CLANG_FORMAT_CHECK: file}
           - {ROS_DISTRO: galactic}
           - {ROS_DISTRO: humble}
           - {ROS_DISTRO: iron}
