@@ -24,7 +24,6 @@
 #include "pf_interfaces/srv/pfsdp_list_iq_parameters.hpp"
 #include "pf_interfaces/srv/pfsdp_get_iq_parameter.hpp"
 #include "pf_interfaces/srv/pfsdp_set_iq_parameter.hpp"
-#include "pf_interfaces/srv/pfsdp_reset_iq_parameter.hpp"
 
 class PFInterface
 {
@@ -76,7 +75,6 @@ private:
   rclcpp::Service<pf_interfaces::srv::PfsdpListIqParameters>::SharedPtr listiqparams_service_;
   rclcpp::Service<pf_interfaces::srv::PfsdpGetIqParameter>::SharedPtr getiqparam_service_;
   rclcpp::Service<pf_interfaces::srv::PfsdpSetIqParameter>::SharedPtr setiqparam_service_;
-  rclcpp::Service<pf_interfaces::srv::PfsdpResetIqParameter>::SharedPtr resetiqparam_service_;
 
   std::string topic_;
   std::string frame_id_;
