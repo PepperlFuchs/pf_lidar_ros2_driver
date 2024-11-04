@@ -4,9 +4,9 @@
 
 #include "pf_driver/ros/pf_services.h"
 
-
-void PFServices::pfsdp_get_protocol_info(const std::shared_ptr<pf_interfaces::srv::PfsdpGetProtocolInfo::Request> request,
-                                         std::shared_ptr<pf_interfaces::srv::PfsdpGetProtocolInfo::Response> response)
+void PFServices::pfsdp_get_protocol_info(
+    const std::shared_ptr<pf_interfaces::srv::PfsdpGetProtocolInfo::Request> request,
+    std::shared_ptr<pf_interfaces::srv::PfsdpGetProtocolInfo::Response> response)
 {
   pf_->pfsdp_info(response->protocol_name, response->version_major, response->version_minor, response->commands,
                   response->error_code, response->error_text);
@@ -48,8 +48,9 @@ void PFServices::pfsdp_reset_parameter(const std::shared_ptr<pf_interfaces::srv:
   pf_->pfsdp_reset("reset_parameter", request->name, response->error_code, response->error_text);
 }
 
-void PFServices::pfsdp_list_iq_parameters(const std::shared_ptr<pf_interfaces::srv::PfsdpListIqParameters::Request> request,
-                                          std::shared_ptr<pf_interfaces::srv::PfsdpListIqParameters::Response> response)
+void PFServices::pfsdp_list_iq_parameters(
+    const std::shared_ptr<pf_interfaces::srv::PfsdpListIqParameters::Request> request,
+    std::shared_ptr<pf_interfaces::srv::PfsdpListIqParameters::Response> response)
 {
   pf_->pfsdp_list("list_iq_parameters", "iq_parameters", response->iq_parameters, response->error_code,
                   response->error_text);

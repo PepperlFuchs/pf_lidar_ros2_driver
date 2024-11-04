@@ -12,11 +12,10 @@
 #include "pf_interfaces/srv/pfsdp_get_iq_parameter.hpp"
 #include "pf_interfaces/srv/pfsdp_set_iq_parameter.hpp"
 
-
 class PFServices
 {
 public:
-  PFServices(PFInterface *pf) : pf_(pf)
+  PFServices(PFInterface* pf) : pf_(pf)
   {
   }
 
@@ -40,7 +39,7 @@ public:
 
   void pfsdp_reset_parameter(const std::shared_ptr<pf_interfaces::srv::PfsdpResetParameter::Request> request,
                              std::shared_ptr<pf_interfaces::srv::PfsdpResetParameter::Response> response);
-                           
+
   void pfsdp_list_iq_parameters(const std::shared_ptr<pf_interfaces::srv::PfsdpListIqParameters::Request> request,
                                 std::shared_ptr<pf_interfaces::srv::PfsdpListIqParameters::Response> response);
 
@@ -51,6 +50,5 @@ public:
                               std::shared_ptr<pf_interfaces::srv::PfsdpSetIqParameter::Response> response);
 
 private:
-  PFInterface *pf_ = nullptr;
+  PFInterface* pf_ = nullptr;
 };
-
