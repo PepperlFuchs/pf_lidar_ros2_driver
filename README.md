@@ -7,7 +7,7 @@ OMDxxx-R2000 Hardware & Firmware >= 1.50 (No support of OBDxxx-R2000 devices)
 OMDxxx-R2300 Hardware >= 0.95, Firmware >= 0.97
 
 **Required platform:**  
-Ubuntu-20.04/ROS Foxy OR Ubuntu-20.04/ROS Galactic OR Ubuntu-22.04/ROS Humble
+Ubuntu-20.04/ROS-Foxy OR Ubuntu-20.04/ROS-Galactic OR Ubuntu-22.04/ROS-Humble OR Ubuntu-24.04/ROS-Jazzy
 
 Note: The ROS1 driver is available here: https://github.com/PepperlFuchs/pf_lidar_ros_driver
   
@@ -19,7 +19,7 @@ git clone https://github.com/PepperlFuchs/pf_lidar_ros2_driver.git
   
 **Install the missing dependencies:**  
 ```
-export ROS_DISTRO=foxy OR export ROS_DISTRO=galactic OR export ROS_DISTRO=humble
+export ROS_DISTRO=foxy OR export ROS_DISTRO=galactic OR export ROS_DISTRO=humble OR export ROS_DISTRO=jazzy
 cd <path/to/workspace>
 rosdep update --include-eol-distros
 rosdep install --from-paths src --ignore-src --rosdistro=$ROS_DISTRO -y
