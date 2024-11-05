@@ -2,6 +2,10 @@
 Changelog for package pf_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.0 (2024-09-17)
+-------------------
+* fix driver build errors under ROS Jazzy `#12 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/issues/12>`_ 
+
 1.2.0 (2022-05-03)
 -------------------
 * fix focal point to world link of r2300 `#72 <https://github.com/PepperlFuchs/pf_lidar_ros_driver/issues/72>`_ 
