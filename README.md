@@ -61,3 +61,8 @@ turn. This is not strictly from bottom to top:
 |1 |-1.5° | - |
 |2 |+4.5° | top |
 |3 |+1.5° | - |
+
+**Services:**  
+The ROS driver offers several ROS services which can be used to communicate with the sensor. Especially
+services for sensor parametrization are available. For example to list, get and set parameters. See the 
+services documentation [services.md](./docs/services.md) for more details and how to use these services.
