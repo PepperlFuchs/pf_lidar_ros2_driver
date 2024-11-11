@@ -2,6 +2,11 @@
 Changelog for package pf_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.0.0 (2024-11-xx)
+------------------
+* ROS/sensor parameters replaced by ROS services (pfsdp_get_parameter & pfsdp_set_parameter)
+* add more ROS services -> pfsdp_list_parameters, pfsdp_reset_parameter, pfsdp_get_protocol_info etc.
+
 1.3.0 (2024-09-17)
 -------------------
 * fix driver build errors under ROS Jazzy `#12 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/issues/12>`_ 

@@ -62,6 +62,9 @@ turn. This is not strictly from bottom to top:
 |2 |+4.5° | top |
 |3 |+1.5° | - |
 
+**Topics:**  
+The R2000 and R2300 devices each publish two topics. See the topics documentation [topics.md](./docs/topics.md) for more details.
+
 **Services:**  
 The ROS driver offers several ROS services which can be used to communicate with the sensor. Especially
 services for sensor parametrization are available. For example to list, get and set parameters. See the 

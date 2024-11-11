@@ -71,3 +71,36 @@ and reboots the device.
 ```
 ros2 service call /pf_r2000/pfsdp_factory_reset pf_interfaces/srv/PfsdpFactoryReset
 ```
+
+## Service type and interface:
+The service type determines which data is used for the request and response of a service. The following command is an 
+example for determining the type of the pfsdp_set_parameter service:
+```
+ros2 service type /pf_r2000/pfsdp_set_parameter
+```
+The return should be the following. Which is also the path to the file where the request and response data is described in detail:
+```
+pf_interfaces/srv/PfsdpSetParameter
+```
+To show the request and response interface/data for the pfsdp_set_parameter service the following command can be used:
+```
+ros2 interface show pf_interfaces/srv/PfsdpSetParameter
+```
+The return should be the following and shows the data name and type of the request above and of the response below the three dashes.
+```
+string name
+string value
+- - -
+int32 error_code
+string error_text
+```
+
+## Service execution status
+All previously described services return at least the error code (error_code) and error text (error_text) in the response.
+Both contain the status of the service execution. Error codes (data type int32) not equal to 0 indicate an error during service 
+execution. Error text (data type string) shows the status of the service execution as a description readable by humans.  
+The following response of the service pfsdp_set_parameter shows the error code, error text and as first return value 
+the read parameter user_tag.
+```
+pf_interfaces.srv.PfsdpGetParameter_Response(value='OMD10M-R2000', error_code=0, error_text='success')
+```
