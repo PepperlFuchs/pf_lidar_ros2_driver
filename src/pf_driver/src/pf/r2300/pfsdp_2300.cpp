@@ -30,17 +30,11 @@ std::string PFSDP_2300::get_part()
 
 void PFSDP_2300::get_scan_parameters()
 {
-  auto resp = get_parameter("angular_fov", "radial_range_min", "radial_range_max", "measure_start_angle",
-                            "measure_stop_angle", "scan_frequency");
-  params_->angular_fov = parser_utils::to_float(resp["angular_fov"]) * M_PI / 180.0;
+  auto resp = get_parameter("radial_range_min", "radial_range_max", "sampling_rate_max", "layer_count");
   params_->radial_range_max = parser_utils::to_float(resp["radial_range_max"]);
   params_->radial_range_min = parser_utils::to_float(resp["radial_range_min"]);
-
-  auto start_stop = get_angle_start_stop(config_->start_angle);
-  params_->angle_min = start_stop.first;
-  params_->angle_max = start_stop.second;
-  get_layers_enabled(params_->layers_enabled, params_->h_enabled_layer);
-  params_->scan_freq = parser_utils::to_float(resp["scan_frequency"]);
+  params_->sampling_rate_max = parser_utils::to_long(resp["sampling_rate_max"]);
+  params_->scan_time_factor = 1;
 }
 
 void PFSDP_2300::get_layers_enabled(uint16_t& enabled, uint16_t& highest)

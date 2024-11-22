@@ -1,12 +1,17 @@
 //#include <exception>
 //#include <limits>
 //#include <utility>
+
+#include <rclcpp/rclcpp.hpp>
+
 #include <rclcpp/duration.hpp>
 #include "pf_driver/ros/pf_data_publisher.h"
 #include "pf_driver/pf/pf_packet/pf_r2000_packet_a.h"
 #include "pf_driver/pf/pf_packet/pf_r2000_packet_b.h"
 #include "pf_driver/pf/pf_packet/pf_r2000_packet_c.h"
 #include "pf_driver/pf/pf_packet/pf_r2300_packet_c1.h"
+
+#include <cmath>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -67,7 +72,7 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     d_queue_.pop_front();
   if (packet.header.header.packet_number == 1)
   {
-    const auto scan_time = rclcpp::Duration(1000.0 / packet.header.scan_frequency, 0);
+    const auto scan_time = rclcpp::Duration(0, 1000000ul * (1000000ul / packet.header.scan_frequency));
     msg.reset(new sensor_msgs::msg::LaserScan());
     msg->header.frame_id.assign(frame_id_);
     // msg->header.seq = packet.header.header.scan_number;
@@ -76,24 +81,34 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     msg->angle_increment = packet.header.angular_increment / 10000.0 * (M_PI / 180.0);
 
     {
-      msg->time_increment = (params_->angular_fov * msg->scan_time) / (M_PI * 2.0) / packet.header.num_points_scan;
-      msg->angle_min = params_->angle_min;
-      msg->angle_max = params_->angle_max;
-      if (std::is_same<T, PFR2300Packet_C1>::value)  // Only Packet C1 for R2300
+      /* Assuming that angle_min always means *first* angle (which may be numerically
+       * greater than angle_max in case of negative angular_increment during CW rotation) */
+
+      msg->angle_min = ((double)packet.header.first_angle) * (M_PI / 1800000.0);
+      msg->angle_max = msg->angle_min + ((double)packet.header.num_points_scan * packet.header.angular_increment) * (M_PI / 1800000.0);
+
+      if (std::is_same<T, PFR2300Packet_C1>::value)  // packet interpretation specific to R2300 output
       {
-        double config_start_angle = config_->start_angle / 1800000.0 * M_PI;
-        if (config_start_angle > params_->angle_min)
+        /* If scans are output on separate topics per layer, the time between messages per topic grows by the number of layers */
+        if (params_->scan_time_factor > 1)
         {
-          msg->angle_min = config_start_angle;
+            msg->scan_time *= (float)(params_->scan_time_factor);
         }
-        if (config_->max_num_points_scan != 0)  // means need to calculate
+
+        double orig_angular_increment = 0.1 * (M_PI/180.0);
+        if (packet.header.scan_frequency > 50000)
         {
-          double config_angle = (config_->max_num_points_scan - 1) * (params_->scan_freq / 500.0) / 180.0 * M_PI;
-          if (msg->angle_min + config_angle < msg->angle_max)
-          {
-            msg->angle_max = msg->angle_min + config_angle;
-          }
-        }
+            orig_angular_increment = 0.2 * (M_PI/180.0);
+        };
+        /* Consider effective longer time_increment due to filtering with decimation */
+        double decimation = round(orig_angular_increment / msg->angle_increment);
+
+        /* Assuming that sampling_rate_max==sampling_rate_min==const. */
+        msg->time_increment = decimation / (double)(params_->sampling_rate_max);
+      }
+      else
+      {
+        msg->time_increment = fabs(scan_time.seconds() * (double)packet.header.angular_increment * (1.0/3600000.0));
       }
 
       msg->range_min = params_->radial_range_min;
