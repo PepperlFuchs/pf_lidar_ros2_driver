@@ -154,7 +154,10 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
         0, rclcpp::Clock(RCL_STEADY_TIME).now());
 
   rclcpp::Time t;
-  params_->passive_timesync.sensor_to_pc(packet.header.timestamp_raw, t);
+  if (config_->timesync_interval > 0)
+    params_->active_timesync.sensor_to_pc(packet.header.timestamp_raw, t);
+  else
+    params_->passive_timesync.sensor_to_pc(packet.header.timestamp_raw, t);
   msg->header.stamp = t;
 
   // errors in scan_number - not in sequence sometimes

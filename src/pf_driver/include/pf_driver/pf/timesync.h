@@ -1,7 +1,9 @@
 #pragma once
 
 #include <deque>
-#include <chrono>
+#include <mutex>
+//#include <chrono>
+
 #include <rclcpp/rclcpp.hpp>
 
 struct TimeSync_Sample
@@ -19,13 +21,15 @@ struct TimeSync_Sample
 class TimeSync
 {
 private:
-    std::deque<TimeSync_Sample> samples;
+    std::deque<TimeSync_Sample> samples_;
 
-    uint64_t sum_req_duration_us;
-    double base_time;
-    double scale_time;
-    rclcpp::Time sensor_base;
-    rclcpp::Time pc_base;
+    uint64_t sum_req_duration_us_;
+    double base_time_;
+    double scale_time_;
+    rclcpp::Time sensor_base_;
+    rclcpp::Time pc_base_;
+
+    std::mutex access_;
 
 public:
     TimeSync();
