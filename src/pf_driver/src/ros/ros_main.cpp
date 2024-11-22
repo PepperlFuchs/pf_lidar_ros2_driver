@@ -17,6 +17,7 @@ int main(int argc, char* argv[])
   port = "0";
   num_layers = 0;
   bool watchdog, apply_correction = 0;
+  int timesync_interval = 0; /* ms or 0(off) */
 
   if (!node->has_parameter("device"))
   {
@@ -73,6 +74,13 @@ int main(int argc, char* argv[])
   }
   node->get_parameter("watchdog", watchdog);
   RCLCPP_INFO(node->get_logger(), "watchdog: %d", watchdog);
+
+  if (!node->has_parameter("timesync_interval"))
+  {
+    node->declare_parameter("timesync_interval", timesync_interval);
+  }
+  node->get_parameter("timesync_interval", timesync_interval);
+  RCLCPP_INFO(node->get_logger(), "timesync_interval: %d", timesync_interval);
 
   if (!node->has_parameter("num_layers"))
   {

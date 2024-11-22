@@ -10,6 +10,7 @@
 #include "pf_driver/pf/pf_writer.h"
 #include "pf_driver/pf/pf_packet_reader.h"
 #include "pf_driver/pf/pipeline.h"
+#include "pf_driver/pf/timesync.h"
 #include "pf_driver/communication/transport.h"
 #include "pf_driver/pf/r2000/pfsdp_2000.h"
 #include "pf_driver/pf/r2300/pfsdp_2300.h"
@@ -33,6 +34,7 @@ private:
 
   std::shared_ptr<rclcpp::Node> node_;
   rclcpp::TimerBase::SharedPtr watchdog_timer_;
+  rclcpp::TimerBase::SharedPtr timesync_timer_;
   std::unique_ptr<Transport> transport_;
   std::shared_ptr<PFSDPBase> protocol_interface_;
   PipelinePtr pipeline_;
@@ -65,6 +67,9 @@ private:
   void start_watchdog_timer(float duration);
   void feed_watchdog();  // timer based
   void on_shutdown();
+
+  void start_timesync_timer(unsigned interval);
+  void update_timesync(void);
 
   // factory functions
   bool handle_version(int major_version, int minor_version, int device_family, const std::string& topic,

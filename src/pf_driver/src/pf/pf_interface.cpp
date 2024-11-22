@@ -22,6 +22,9 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
   info_ = info;
   params_ = params;
 
+  params_->active_timesync.reset(0.0);
+  params_->passive_timesync.reset(0.0);
+
   topic_ = topic;
   frame_id_ = frame_id;
   num_layers_ = num_layers;
@@ -145,6 +148,10 @@ bool PFInterface::start_transmission(std::shared_ptr<std::mutex> net_mtx,
   {
     start_watchdog_timer(config_->watchdogtimeout / 1000.0);
   }
+  if (config_->timesync_interval != 0)
+  {
+    start_timesync_timer(config_->timesync_interval);
+  }
   change_state(PFState::RUNNING);
   return true;
 }
@@ -167,6 +174,10 @@ void PFInterface::terminate()
   if (config_->watchdog)
   {
     watchdog_timer_->cancel();
+  }
+  if (config_->timesync_interval != 0)
+  {
+    timesync_timer_->cancel();
   }
 
   pipeline_->terminate();
@@ -193,6 +204,37 @@ void PFInterface::start_watchdog_timer(float duration)
 void PFInterface::feed_watchdog()
 {
   protocol_interface_->feed_watchdog(info_->handle);
+}
+
+void PFInterface::start_timesync_timer(unsigned interval)
+{
+  timesync_timer_ =
+      node_->create_wall_timer(std::chrono::milliseconds(interval), std::bind(&PFInterface::update_timesync, this));
+}
+
+void PFInterface::update_timesync(void)
+{
+#if 1
+  rclcpp::Time start(rclcpp::Clock(RCL_STEADY_TIME).now());
+  auto resp = protocol_interface_->get_parameter("system_time_raw");
+  rclcpp::Time end(rclcpp::Clock(RCL_STEADY_TIME).now());
+  const uint64_t sensor_time = stoull(resp["system_time_raw"]);
+  params_->active_timesync.update(sensor_time, (end-start).nanoseconds()/1000, start);
+#else
+  const std::string system_time_raw_name("system_time_raw");
+  std::string system_time_raw_value;
+  std::string error_text;
+  int32_t error_code = -1;
+  rclcpp::Time start(rclcpp::Clock(RCL_STEADY_TIME).now());
+  protocol_interface_->get_parameter("get_parameter", system_time_raw_name, system_time_raw_value, error_code, error_text);
+  if (error_code == 0)
+  {
+    rclcpp::Time end(rclcpp::Clock(RCL_STEADY_TIME).now());
+    const uint64_t sensor_time = stoull(system_time_raw_value);
+
+    params_->active_timesync.update(sensor_time, (end-start).nanoseconds()/1000, start);
+  }
+#endif
 }
 
 void PFInterface::on_shutdown()

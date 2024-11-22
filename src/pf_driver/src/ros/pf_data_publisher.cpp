@@ -13,6 +13,8 @@
 
 #include <cmath>
 
+#include <cmath>
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -124,6 +126,37 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
   if (!msg)
     return;
 
+  /* The timestamp in the packet tells about the time when the first sample in the
+        packet was measured, but now is rather shortly after the *last* sample in the
+        packet was measured (plus transmission and OS processing time that we don't know) */
+  RCLCPP_INFO(rclcpp::get_logger("timesync"), "packet with %08x %u %u %f",
+        packet.header.status_flags,
+        packet.header.num_points_packet,
+        packet.header.scan_frequency,
+        msg->time_increment);
+
+  if (packet.header.status_flags != 0)
+  {
+    /* Information in packet is inconsistent.
+
+      Most probably (at startup or after changing parameters) the
+      header.scan_frequency does not match the actual physical frequency ("unstable
+      rotation") and thus the time_increment from header does not match the
+      real sample frequency
+
+    */
+    params_->passive_timesync.reset(0.0);
+    params_->active_timesync.reset(0.0);
+  }
+
+  params_->passive_timesync.update(packet.header.timestamp_raw
+        + (uint64_t)(packet.header.num_points_packet * msg->time_increment * pow(2.0, 32)),
+        0, rclcpp::Clock(RCL_STEADY_TIME).now());
+
+  rclcpp::Time t;
+  params_->passive_timesync.sensor_to_pc(packet.header.timestamp_raw, t);
+  msg->header.stamp = t;
+
   // errors in scan_number - not in sequence sometimes
   /*if (msg->header.seq != packet.header.header.scan_number)
     return;*/
@@ -151,9 +184,8 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
 }
 
 // check the status bits here with a switch-case
-// Currently only for logging purposes only
 bool PFDataPublisher::check_status(uint32_t status_flags)
 {
   // if(packet.header.header.scan_number > packet.)
-  return true;
+  return (status_flags==0);
 }
