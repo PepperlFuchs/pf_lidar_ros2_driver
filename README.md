@@ -62,10 +62,23 @@ turn. This is not strictly from bottom to top:
 |2 |+4.5° | top |
 |3 |+1.5° | - |
 
-**Topics:**  
+**ROS-Topics:**  
 The R2000 and R2300 devices each publish two topics. See the topics documentation [topics.md](./docs/topics.md) for more details.
 
-**Services:**  
+**ROS-Services:**  
 The ROS driver offers several ROS services which can be used to communicate with the sensor. Especially
 services for sensor parametrization are available. For example to list, get and set parameters. See the 
 services documentation [services.md](./docs/services.md) for more details and how to use these services.
+
+**Configure device settings at driver start:**  
+It is possible to set device parameters when the driver starts. To do this, the corresponding file in the
+directory \src\pf_driver\config\*.yaml (e.g. r2000_params.yaml) must be adapted, which is then used by the
+launch file as a parameters file. By adding the following line, the two device parameters 'user_tag' and
+'hmi_application_text_1' are set to 'myTag20090505' and 'MyHMIapplText19800128' respectively in a R2000 device.
+```
+pfsdp_init: ['user_tag=myTag20090505', 'hmi_application_text_1=MyHMIapplText19800128']
+```
+Other device parameters can be set in this way. An overview of the settable device parameters and their
+possible adjustable values can be found in the following documents
+[R2000](https://files.pepperl-fuchs.com/webcat/navi/productInfo/doct/doct3469g.pdf) /
+[R2300](https://files.pepperl-fuchs.com/webcat/navi/productInfo/doct/doct7001b.pdf)).

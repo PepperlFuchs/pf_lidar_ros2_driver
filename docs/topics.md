@@ -5,7 +5,7 @@
 | Topic         | Type          | Description                                                                                                                  |
 | ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | /pf/scan      | LaserScan     | ROS standard message, see [sensor_msgs/LaserScan](https://docs.ros.org/en/jazzy/p/sensor_msgs/interfaces/msg/LaserScan.html) |
-| /r2000_header | PFR2000Header | Sensor specific message, see [pf_interfaces/msg/PFR2000Header.msg] (../src/pf_interfaces/msg/PFR2000Header.msg)              |
+| /r2000_header | PFR2000Header | Sensor specific message, see [pf_interfaces/msg/PFR2000Header.msg](../src/pf_interfaces/msg/PFR2000Header.msg)               |
 
 Topic PFR2000Header details:
 
@@ -62,7 +62,7 @@ status_flags details:
 | Topic         | Type          | Description                                                                                                                      |
 | ------------- |-------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | /pf/cloud     | PointCloud2   | ROS standard message, see [sensor_msgs/PointCloud2](https://docs.ros.org/en/jazzy/p/sensor_msgs/interfaces/msg/PointCloud2.html) |
-| /r2300_header | PFR2300Header | Sensor specific message, see [pf_interfaces/msg/PFR2300Header.msg] (../src/pf_interfaces/msg/PFR2300Header.msg)                  |
+| /r2300_header | PFR2300Header | Sensor specific message, see [pf_interfaces/msg/PFR2300Header.msg](../src/pf_interfaces/msg/PFR2300Header.msg)                   |
 
 Topic PFR2300Header details:
 

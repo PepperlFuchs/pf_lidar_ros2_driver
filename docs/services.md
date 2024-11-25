@@ -1,9 +1,12 @@
 ## ROS Services
 
 The ROS driver provides the following services. They use the sensor specific Pepperl+Fuchs scan data
-protocol (PFSDP) which is a simple command protocol using HTTP requests and responses. Please see the
-following detailed descriptions and examples to call these services. The examples are based on the
-assumption that the node name is pf_r2000.
+protocol (PFSDP - [R2000](https://files.pepperl-fuchs.com/webcat/navi/productInfo/doct/doct3469g.pdf) /
+[R2300](https://files.pepperl-fuchs.com/webcat/navi/productInfo/doct/doct7001b.pdf)) which is a simple 
+command protocol using HTTP requests and responses. Please see the following detailed descriptions and 
+examples to call these services. The examples are based on the assumption that the node name is pf_r2000.
+Which parameters can be written with which values can be found in the PFSDP documents (R2x00 Ethernet 
+communication protocol) linked above.
 
 **List parameters**  
 The service pfsdp_list_parameters returns a list of all available global sensor parameters.
