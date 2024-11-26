@@ -2,7 +2,7 @@
 Changelog for package pf_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-2.0.0 (2024-11-xx)
+2.0.0 (2024-11-26)
 ------------------
 * ROS/sensor parameters replaced by ROS services (pfsdp_get_parameter & pfsdp_set_parameter)
 * add more ROS services -> pfsdp_list_parameters, pfsdp_reset_parameter, pfsdp_get_protocol_info etc.
