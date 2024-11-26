@@ -53,8 +53,7 @@ private:
 
   bool is_connection_failure(const std::string& http_error);
 
-  bool check_error(std::map<std::string, std::string>& mp, const std::string& err_code, const std::string& err_text,
-                   const std::string& err_http);
+  void copy_status_from_json(int32_t&, std::string&, Json::Value);
 
 protected:
   std::shared_ptr<rclcpp::Node> node_;
@@ -69,13 +68,17 @@ public:
 
   void set_connection_failure_cb(std::function<void()> callback);
 
-  const std::vector<std::string> list_parameters();
-
-  bool reboot_device();
-
-  void factory_reset();
-
-  bool release_handle(const std::string& handle);
+  void list_parameters(const char* cmd, const char* out, std::vector<std::string>& params, int32_t& error_code,
+                       std::string& error_text);
+  void get_parameter(const char* cmd, const std::string& name, std::string& value, int32_t& error_code,
+                     std::string& error_text);
+  void set_parameter(const char* cmd, const std::string& name, const std::string& value, int32_t& error_code,
+                     std::string& error_text);
+  void reset_parameter(const char* cmd, const std::string& name, int32_t& error_code, std::string& error_text);
+  void reboot(int32_t& error_code, std::string& error_text);
+  void factory(int32_t& error_code, std::string& error_text);
+  void info(std::string& n, int32_t& major, int32_t& minor, std::vector<std::string>& cmds, int32_t& error_code,
+            std::string& error_text);
 
   ProtocolInfo get_protocol_info();
 
@@ -97,15 +100,11 @@ public:
 
   std::string get_parameter_str(const std::string& param);
 
-  template <typename... Ts>
-  bool reset_parameter(const Ts&... ts)
-  {
-    return get_request_bool("reset_parameter", { "" }, { KV("list", ts...) });
-  }
-
   void request_handle_tcp(const std::string& port = "", const std::string& packet_type = "");
 
   virtual void request_handle_udp(const std::string& packet_type = "");
+
+  bool release_handle(const std::string& handle);
 
   virtual void get_scanoutput_config(const std::string& handle);
 
@@ -132,6 +131,8 @@ public:
   void declare_critical_parameters();
 
   void declare_common_parameters();
+
+  void pfsdp_init(const rclcpp::Parameter& parameter);
 
   virtual void declare_specific_parameters()
   {

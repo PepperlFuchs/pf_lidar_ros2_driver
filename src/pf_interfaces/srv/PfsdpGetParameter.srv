@@ -1,0 +1,7 @@
+string name         # name of the parameter, e.g. scan_frequency
+---
+string value        # value of the parameter as string, e.g. "10.5". array values are returned as one string of semicolon-separated values
+int32 error_code    # 0 if everything went well in the sensor, <0 network/http error, >0 pfsdp error
+string error_text   # verbose explanation of error_code value
+
+
