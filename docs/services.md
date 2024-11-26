@@ -100,10 +100,10 @@ string error_text
 
 ## Service execution status
 All previously described services return at least the error code (error_code) and error text (error_text) in the response.
-Both contain the status of the service execution. Error codes (data type int32) not equal to 0 indicate an error during service 
+Both contain the status of the service execution. Error codes (data type int32) not equal to 0 indicate an error during service
 execution. Error text (data type string) shows the status of the service execution as a description readable by humans.  
-The following response of the service pfsdp_set_parameter shows the error code, error text and as first return value 
-the read parameter user_tag.
+Exemplary the following response of the service pfsdp_get_parameter shows the error code, error text and as first return value
+the read parameter vendor.
 ```
-pf_interfaces.srv.PfsdpGetParameter_Response(value='OMD10M-R2000', error_code=0, error_text='success')
+pf_interfaces.srv.PfsdpGetParameter_Response(value='Pepperl+Fuchs', error_code=0, error_text='success')
 ```
