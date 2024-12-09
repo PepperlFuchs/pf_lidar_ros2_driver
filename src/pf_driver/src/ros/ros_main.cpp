@@ -12,10 +12,12 @@ int main(int argc, char* argv[])
   rclcpp::init(argc, argv);
   auto node = std::make_shared<rclcpp::Node>("pf_driver");
 
+  std::vector<std::string> pfsdp_init;
   std::string device, transport_str, scanner_ip, port, topic, frame_id, packet_type;
-  int samples_per_scan, start_angle, max_num_points_scan, watchdogtimeout, num_layers;
+  int samples_per_scan, start_angle, max_num_points_scan, watchdogtimeout, skip_scans, num_layers;
   port = "0";
   num_layers = 0;
+  skip_scans = 0;
   bool watchdog, apply_correction = 0;
   int timesync_interval = 0; /* ms or 0(off) */
 
@@ -117,20 +119,23 @@ int main(int argc, char* argv[])
   node->get_parameter("apply_correction", apply_correction);
   RCLCPP_INFO(node->get_logger(), "apply_correction: %d", apply_correction);
 
-  std::string ip_mode, ip_address, subnet_mask, gateway, scan_direction, user_tag;
-  int packet_crc, skip_scans, scan_frequency;
-  bool locator_indication;
+  if (!node->has_parameter("skip_scans"))
+  {
+    node->declare_parameter("skip_scans", skip_scans);
+  }
+  node->get_parameter("skip_scans", skip_scans);
+  RCLCPP_INFO(node->get_logger(), "skip_scans: %d", skip_scans);
 
-  node->declare_parameter("scan_frequency", scan_frequency);
-  node->declare_parameter("locator_indication", locator_indication);
-  node->declare_parameter("packet_crc", packet_crc);
-  node->declare_parameter("ip_mode", ip_mode);
-  node->declare_parameter("ip_address", ip_address);
-  node->declare_parameter("subnet_mask", subnet_mask);
-  node->declare_parameter("gateway", gateway);
-  node->declare_parameter("scan_direction", scan_direction);
-  node->declare_parameter("skip_scans", skip_scans);
-  node->declare_parameter("user_tag", user_tag);
+  if (!node->has_parameter("pfsdp_init"))
+  {
+    node->declare_parameter("pfsdp_init", pfsdp_init);
+  }
+  node->get_parameter("pfsdp_init", pfsdp_init);
+  RCLCPP_INFO(node->get_logger(), "pfsdp_init.size: %d", (int)pfsdp_init.size());
+  for (int i = 0; i < pfsdp_init.size(); ++i)
+  {
+    RCLCPP_INFO(node->get_logger(), "pfsdp_init[%d]: %s", i, pfsdp_init[i].c_str());
+  }
 
   std::shared_ptr<HandleInfo> info = std::make_shared<HandleInfo>();
 
@@ -142,11 +147,10 @@ int main(int argc, char* argv[])
   std::shared_ptr<ScanConfig> config = std::make_shared<ScanConfig>();
   config->start_angle = node->get_parameter("start_angle").get_parameter_value().get<int>();
   config->max_num_points_scan = node->get_parameter("max_num_points_scan").get_parameter_value().get<int>();
+  config->skip_scans = node->get_parameter("skip_scans").get_parameter_value().get<int>();
   config->packet_type = node->get_parameter("packet_type").get_parameter_value().get<std::string>();
   config->watchdogtimeout = node->get_parameter("watchdogtimeout").get_parameter_value().get<int>();
   config->watchdog = node->get_parameter("watchdog").get_parameter_value().get<bool>();
-  // config->scan_frequency = scan_frequency;
-  // config->samples_per_scan = samples_per_scan;
   RCLCPP_INFO(node->get_logger(), "start_angle: %d", config->start_angle);
 
   std::shared_ptr<ScanParameters> params = std::make_shared<ScanParameters>();

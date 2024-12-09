@@ -1,0 +1,4 @@
+---
+string[] parameters
+int32 error_code    # 0 if everything went well in the sensor, <0 network/http error, >0 pfsdp error
+string error_text

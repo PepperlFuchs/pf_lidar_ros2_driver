@@ -2,6 +2,12 @@
 Changelog for package pf_description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.0.0 (2024-11-26)
+------------------
+
+1.3.0 (2024-09-17)
+-------------------
+
 1.2.0 (2022-05-03)
 -------------------
 * fix xacro filename cases `#70 <https://github.com/PepperlFuchs/pf_lidar_ros_driver/issues/70>`_ from PepperlFuchs/fix_xacro_filenames

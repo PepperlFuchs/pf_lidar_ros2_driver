@@ -54,6 +54,7 @@ set(${PROJECT_NAME}_SOURCES
   src/ros/laser_scan_publisher.cpp
   src/ros/point_cloud_publisher.cpp
   src/ros/pf_data_publisher.cpp
+  src/ros/pf_services.cpp
 )
 
 add_executable(ros_main

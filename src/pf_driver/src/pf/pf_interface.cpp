@@ -5,6 +5,7 @@
 
 #include <rcutils/logging.h>
 #include "pf_driver/pf/pf_interface.h"
+#include "pf_driver/ros/pf_services.h"
 #include "pf_driver/ros/laser_scan_publisher.h"
 #include "pf_driver/ros/point_cloud_publisher.h"
 #include "pf_driver/communication/udp_transport.h"
@@ -29,6 +30,8 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
   frame_id_ = frame_id;
   num_layers_ = num_layers;
 
+  has_iq_parameters_ = false;
+
   protocol_interface_ = std::make_shared<PFSDPBase>(node_, info, config, params);
   // This is the first time ROS communicates with the device
   auto opi = protocol_interface_->get_protocol_info();
@@ -49,6 +52,12 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
     RCLCPP_ERROR(node_->get_logger(), "Device unsupported");
     return false;
   }
+
+  if (std::find(opi.commands.begin(), opi.commands.end(), "list_iq_parameters") != opi.commands.end())
+  {
+    has_iq_parameters_ = true;
+  }
+
   RCLCPP_INFO(node_->get_logger(), "Device found: %s", product_.c_str());
 
   // release previous handles
@@ -56,6 +65,16 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
   {
     protocol_interface_->release_handle(prev_handle_);
   }
+
+  // apply pfsdp_init name=value setup
+  rclcpp::Parameter pfsdp_init_param;
+  if (node_->get_parameter("pfsdp_init", pfsdp_init_param))
+  {
+    protocol_interface_->pfsdp_init(pfsdp_init_param);
+  }
+
+  // add services
+  add_pf_services();
 
   if (info->handle_type == HandleInfo::HANDLE_TYPE_UDP)
   {
@@ -302,6 +321,68 @@ bool PFInterface::handle_version(int major_version, int minor_version, int devic
   return false;
 }
 
+void PFInterface::add_pf_services(void)
+{
+  // Add PFSDP services as appropriate for the given product features
+  std::string basename = std::string(node_->get_namespace()) + std::string(node_->get_name()) + std::string("/pfsdp_");
+  std::string svcname;
+
+  std::shared_ptr<PFServices> pf_services = std::make_shared<PFServices>(this);
+
+  svcname = basename + "get_protocol_info";
+  info_service_ = node_->create_service<pf_interfaces::srv::PfsdpGetProtocolInfo>(
+      svcname.c_str(),
+      std::bind(&PFServices::pfsdp_get_protocol_info, pf_services, std::placeholders::_1, std::placeholders::_2));
+
+  svcname = basename + "reboot_device";
+  reboot_service_ = node_->create_service<pf_interfaces::srv::PfsdpRebootDevice>(
+      svcname.c_str(),
+      std::bind(&PFServices::pfsdp_reboot_device, pf_services, std::placeholders::_1, std::placeholders::_2));
+
+  svcname = basename + "factory_reset";
+  factory_service_ = node_->create_service<pf_interfaces::srv::PfsdpFactoryReset>(
+      svcname.c_str(),
+      std::bind(&PFServices::pfsdp_factory_reset, pf_services, std::placeholders::_1, std::placeholders::_2));
+
+  svcname = basename + "list_parameters";
+  listparams_service_ = node_->create_service<pf_interfaces::srv::PfsdpListParameters>(
+      svcname.c_str(),
+      std::bind(&PFServices::pfsdp_list_parameters, pf_services, std::placeholders::_1, std::placeholders::_2));
+
+  svcname = basename + "get_parameter";
+  getparam_service_ = node_->create_service<pf_interfaces::srv::PfsdpGetParameter>(
+      svcname.c_str(),
+      std::bind(&PFServices::pfsdp_get_parameter, pf_services, std::placeholders::_1, std::placeholders::_2));
+
+  svcname = basename + "set_parameter";
+  setparam_service_ = node_->create_service<pf_interfaces::srv::PfsdpSetParameter>(
+      svcname.c_str(),
+      std::bind(&PFServices::pfsdp_set_parameter, pf_services, std::placeholders::_1, std::placeholders::_2));
+
+  svcname = basename + "reset_parameter";
+  resetparam_service_ = node_->create_service<pf_interfaces::srv::PfsdpResetParameter>(
+      svcname.c_str(),
+      std::bind(&PFServices::pfsdp_reset_parameter, pf_services, std::placeholders::_1, std::placeholders::_2));
+
+  if (has_iq_parameters_)
+  {
+    svcname = basename + "list_iq_parameters";
+    listiqparams_service_ = node_->create_service<pf_interfaces::srv::PfsdpListIqParameters>(
+        svcname.c_str(),
+        std::bind(&PFServices::pfsdp_list_iq_parameters, pf_services, std::placeholders::_1, std::placeholders::_2));
+
+    svcname = basename + "get_iq_parameter";
+    getiqparam_service_ = node_->create_service<pf_interfaces::srv::PfsdpGetIqParameter>(
+        svcname.c_str(),
+        std::bind(&PFServices::pfsdp_get_iq_parameter, pf_services, std::placeholders::_1, std::placeholders::_2));
+
+    svcname = basename + "set_iq_parameter";
+    setiqparam_service_ = node_->create_service<pf_interfaces::srv::PfsdpSetIqParameter>(
+        svcname.c_str(),
+        std::bind(&PFServices::pfsdp_set_iq_parameter, pf_services, std::placeholders::_1, std::placeholders::_2));
+  }
+}
+
 std::unique_ptr<Pipeline> PFInterface::get_pipeline(const std::string& packet_type, std::shared_ptr<std::mutex> net_mtx,
                                                     std::shared_ptr<std::condition_variable> net_cv, bool& net_fail)
 {
@@ -338,4 +419,43 @@ std::unique_ptr<Pipeline> PFInterface::get_pipeline(const std::string& packet_ty
       std::shared_ptr<Writer<PFPacket>>(new PFWriter<PFPacket>(std::move(transport_), parser, node_->get_logger()));
   return std::make_unique<Pipeline>(writer, reader_, std::bind(&PFInterface::connection_failure_cb, this), net_mtx,
                                     net_cv, net_fail);
+}
+
+void PFInterface::pfsdp_reboot(int32_t& error_code, std::string& error_text)
+{
+  protocol_interface_->reboot(error_code, error_text);
+}
+
+void PFInterface::pfsdp_factory(int32_t& error_code, std::string& error_text)
+{
+  protocol_interface_->factory(error_code, error_text);
+}
+
+void PFInterface::pfsdp_info(std::string& protocol_name, int32_t& version_major, int32_t& version_minor,
+                             std::vector<std::string>& commands, int32_t& error_code, std::string& error_text)
+{
+  protocol_interface_->info(protocol_name, version_major, version_minor, commands, error_code, error_text);
+}
+
+void PFInterface::pfsdp_list(const char* cmd, const char* out, std::vector<std::string>& params, int32_t& error_code,
+                             std::string& error_text)
+{
+  protocol_interface_->list_parameters(cmd, out, params, error_code, error_text);
+}
+
+void PFInterface::pfsdp_get(const char* cmd, const std::string& name, std::string& value, int32_t& error_code,
+                            std::string& error_text)
+{
+  protocol_interface_->get_parameter(cmd, name, value, error_code, error_text);
+}
+
+void PFInterface::pfsdp_set(const char* cmd, const std::string& name, const std::string& value, int32_t& error_code,
+                            std::string& error_text)
+{
+  protocol_interface_->set_parameter(cmd, name, value, error_code, error_text);
+}
+
+void PFInterface::pfsdp_reset(const char* cmd, const std::string& name, int32_t& error_code, std::string& error_text)
+{
+  protocol_interface_->reset_parameter(cmd, name, error_code, error_text);
 }
