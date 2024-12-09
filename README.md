@@ -7,7 +7,7 @@ OMDxxx-R2000 Hardware & Firmware >= 1.50 (No support of OBDxxx-R2000 devices)
 OMDxxx-R2300 Hardware >= 0.95, Firmware >= 0.97
 
 **Required platform:**  
-Ubuntu-20.04/ROS Foxy OR Ubuntu-20.04/ROS Galactic OR Ubuntu-22.04/ROS Humble
+Ubuntu-20.04/ROS-Foxy OR Ubuntu-20.04/ROS-Galactic OR Ubuntu-22.04/ROS-Humble OR Ubuntu-24.04/ROS-Jazzy
 
 Note: The ROS1 driver is available here: https://github.com/PepperlFuchs/pf_lidar_ros_driver
   
@@ -19,7 +19,7 @@ git clone https://github.com/PepperlFuchs/pf_lidar_ros2_driver.git
   
 **Install the missing dependencies:**  
 ```
-export ROS_DISTRO=foxy OR export ROS_DISTRO=galactic OR export ROS_DISTRO=humble
+export ROS_DISTRO=foxy OR export ROS_DISTRO=galactic OR export ROS_DISTRO=humble OR export ROS_DISTRO=jazzy
 cd <path/to/workspace>
 rosdep update --include-eol-distros
 rosdep install --from-paths src --ignore-src --rosdistro=$ROS_DISTRO -y
@@ -61,3 +61,24 @@ turn. This is not strictly from bottom to top:
 |1 |-1.5° | - |
 |2 |+4.5° | top |
 |3 |+1.5° | - |
+
+**ROS-Topics:**  
+The R2000 and R2300 devices each publish two topics. See the topics documentation [topics.md](./docs/topics.md) for more details.
+
+**ROS-Services:**  
+The ROS driver offers several ROS services which can be used to communicate with the sensor. Especially
+services for sensor parametrization are available. For example to list, get and set parameters. See the 
+services documentation [services.md](./docs/services.md) for more details and how to use these services.
+
+**Configure device settings at driver start:**  
+It is possible to set device parameters when the driver starts. To do this, the corresponding file in the
+directory \src\pf_driver\config\*.yaml (e.g. r2000_params.yaml) must be adapted, which is then used by the
+launch file as a parameters file. By adding the following line, the two device parameters 'user_tag' and
+'hmi_application_text_1' are set to 'myTag20090505' and 'MyHMIapplText19800128' respectively in a R2000 device.
+```
+pfsdp_init: ['user_tag=myTag20090505', 'hmi_application_text_1=MyHMIapplText19800128']
+```
+Other device parameters can be set in this way. An overview of the settable device parameters and their
+possible adjustable values can be found in the following documents
+[R2000](https://files.pepperl-fuchs.com/webcat/navi/productInfo/doct/doct3469g.pdf) /
+[R2300](https://files.pepperl-fuchs.com/webcat/navi/productInfo/doct/doct7001b.pdf)).

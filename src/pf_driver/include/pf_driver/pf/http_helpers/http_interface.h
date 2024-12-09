@@ -26,15 +26,13 @@ class HTTPInterface
 public:
   HTTPInterface(std::string host, std::string path = "");
 
-  const std::map<std::string, std::string>
-  get(const std::vector<std::string>& json_keys, const std::string& command,
-      const std::initializer_list<param_type>& list = std::initializer_list<param_type>());
+  const Json::Value get(const std::string& command,
+                        const std::initializer_list<param_type>& list = std::initializer_list<param_type>());
 
-  const std::map<std::string, std::string> get(const std::vector<std::string>& json_keys, const std::string& command,
-                                               const param_map_type& params = param_map_type());
+  const Json::Value get(const std::string& command, const param_map_type& params = param_map_type());
 
 private:
-  const std::map<std::string, std::string> get_(const std::vector<std::string>& json_keys, CurlResource& res);
+  const Json::Value get_(CurlResource& res);
 
   const std::string host;
   const std::string base_path;
