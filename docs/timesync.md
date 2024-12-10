@@ -12,9 +12,43 @@ information, all sensor timestamps can be converted into ROS timestamps.
 
 ### Scan data packet reception time
 
+The sensor timestamp of the packets received from the sensor can be related to the
+ROS time when the packets are evaluated.
+
+At that time of evaluation, an unknown duration has passed since physical reception.
+
+Several delays have to be taken into account:
+
+ - the timestamp in the packet describes the time when the first included measurement 
+    was made. Since then, `num_points_packet` further measurements took place at the
+    current sample rate, until the packet was constructed and passed to the
+    network driver at the sensor.
+ - the actual transmission (preparation in network stack on sensor, eventual route
+    passing more network devices like routers, and reception and routing to application
+    on the computer running the ROS driver node) takes some time. The amount of time
+    depends on the transmission protocol (realtime UDP for first UDP handle takes almost
+    no time, TCP however could even be slowed down by the ROS node) and is unknown.
+
+Unfortunately, the exact time when the packet was actually received is only
+available for UDP data only with extra low level OS-dependent functions and out
+of reach in this implementation.
+
+Typically however it is only very few milliseconds with noticable some exceptions.
+
 
 ### Continuous requests for sensor time
 
+A HTTP request is made by ROS driver to request the `timestamp_raw` from sensor. The time when
+the request is made and the time when the response is ready give absolute bounds for the ROS time
+that was current at the time when the reported `timestamp_raw` was read on the sensor side.
+
+However, the duration of the request can be rather long (ie. tens of milliseconds) and it is a
+little uncertain when the clock was read within the time frame - more towards the beginning or end?
+
+### Common time
+
+The sensor and ROS could synchronize their time to a common time source. The R2000 and R2300 yet
+do not support such synchronization.
 
 ### Implementation in PF driver
 
@@ -30,10 +64,6 @@ In `pf_interface`, a timer is set up to regularly trigger HTTP requests for sens
 Another instance, `passive_timesync`, is updated each time when a scan data packet is evaluated, using
 the sensor timestamp in the packet and the ROS time when evaluation starts.  At that time of evaluation, an unknown duration has passed since physical reception.
 
-Unfortunately, the exact time when the packet was actually received is only
-available with extra low level OS-dependent functions and out of reach in this
-implementation.
-
 For ease of implementation, the `TimeSync` instances are part of the `params_` `ScanParameter` object,
 because this object is within reach for both the PF interface timer callback and during packet evaluation,
 although they strictly aren't parameters but dynamic state.
@@ -41,12 +71,14 @@ although they strictly aren't parameters but dynamic state.
 
 ### Usage
 
-Set `timesync_interval` to some non-zero milliseconds value if extra HTTP requests for sensor time shall
-be made. Otherwise, the packet reception is used to determine the timestamp relation.
+Set node parameter `timesync_interval` to some non-zero milliseconds value if
+extra HTTP requests for sensor time shall be made. The node will perform those
+request regularly each time the interval passed. Otherwise, the packet
+evaluation time is used to determine the timestamp relation. 
 
-The recorded data is reset whenever scan parameters such as frequency and angular resolution are changed.
-The timestamps presented in the output just after changes should not be taken with care, as they might be
-inaccurate and jittering.
-
+The recorded data is reset whenever scan parameters such as frequency and
+angular resolution are changed. Immediately after such changes, the ROS
+timestamps in scan data should be taken with care, while conversion coefficient
+and offset are still settling.
 
 
