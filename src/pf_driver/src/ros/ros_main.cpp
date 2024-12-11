@@ -177,32 +177,33 @@ int main(int argc, char* argv[])
   });
 
   if (rclcpp::ok())
-  do
   {
-    net_fail = false;
-    if (!pf_interface.init(info, config, params, topic, frame_id, num_layers))
+    do
     {
-      RCLCPP_ERROR(node->get_logger(), "Unable to initialize device");
-      if (retrying)
+      net_fail = false;
+      if (!pf_interface.init(info, config, params, topic, frame_id, num_layers))
       {
-        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-        continue;
+        RCLCPP_ERROR(node->get_logger(), "Unable to initialize device");
+        if (retrying)
+        {
+          std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+          continue;
+        }
+        return -1;
       }
-      return -1;
-    }
-    if (!pf_interface.start_transmission(net_mtx_, net_cv_, net_fail))
-    {
-      RCLCPP_ERROR(node->get_logger(), "Unable to start scan");
-      return -1;
-    }
-    retrying = true;
-    // wait for condition variable
-    std::unique_lock<std::mutex> net_lock(*net_mtx_);
-    net_cv_->wait(net_lock, [] { return net_fail; });
-    RCLCPP_ERROR(node->get_logger(), "Network failure");
-    pf_interface.terminate();
+      if (!pf_interface.start_transmission(net_mtx_, net_cv_, net_fail))
+      {
+        RCLCPP_ERROR(node->get_logger(), "Unable to start scan");
+        return -1;
+      }
+      retrying = true;
+      // wait for condition variable
+      std::unique_lock<std::mutex> net_lock(*net_mtx_);
+      net_cv_->wait(net_lock, [] { return net_fail; });
+      RCLCPP_ERROR(node->get_logger(), "Network failure");
+      pf_interface.terminate();
+    } while (rclcpp::ok() && retrying);
   }
-  while (rclcpp::ok() && retrying);
 
   std::cout << "I am here" << std::endl;
   pf_interface.stop_transmission();
