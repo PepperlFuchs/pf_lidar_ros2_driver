@@ -129,11 +129,8 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
   /* The timestamp in the packet tells about the time when the first sample in the
         packet was measured, but now is rather shortly after the *last* sample in the
         packet was measured (plus transmission and OS processing time that we don't know) */
-  RCLCPP_INFO(rclcpp::get_logger("timesync"), "packet with %08x %u %u %f",
-        packet.header.status_flags,
-        packet.header.num_points_packet,
-        packet.header.scan_frequency,
-        msg->time_increment);
+  RCLCPP_INFO(rclcpp::get_logger("timesync"), "packet with %08x %u %u %f", packet.header.status_flags,
+              packet.header.num_points_packet, packet.header.scan_frequency, msg->time_increment);
 
   if (packet.header.status_flags != 0)
   {
@@ -149,9 +146,9 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     params_->active_timesync.reset(0.0);
   }
 
-  params_->passive_timesync.update(packet.header.timestamp_raw
-        + (uint64_t)(packet.header.num_points_packet * msg->time_increment * pow(2.0, 32)),
-        0, rclcpp::Clock(RCL_STEADY_TIME).now());
+  params_->passive_timesync.update(packet.header.timestamp_raw +
+                                       (uint64_t)(packet.header.num_points_packet * msg->time_increment * pow(2.0, 32)),
+                                   0, rclcpp::Clock(RCL_STEADY_TIME).now());
 
   rclcpp::Time t;
   if (config_->timesync_interval > 0)
@@ -190,5 +187,5 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
 bool PFDataPublisher::check_status(uint32_t status_flags)
 {
   // if(packet.header.header.scan_number > packet.)
-  return (status_flags==0);
+  return (status_flags == 0);
 }
