@@ -20,6 +20,7 @@ int main(int argc, char* argv[])
   skip_scans = 0;
   bool watchdog, apply_correction = 0;
   int timesync_interval = 0; /* ms or 0(off) */
+  int timesync_period = 0;   /* ms or 0(no averaging) */
 
   if (!node->has_parameter("device"))
   {
@@ -83,6 +84,13 @@ int main(int argc, char* argv[])
   }
   node->get_parameter("timesync_interval", timesync_interval);
   RCLCPP_INFO(node->get_logger(), "timesync_interval: %d", timesync_interval);
+
+  if (!node->has_parameter("timesync_period"))
+  {
+    node->declare_parameter("timesync_period", timesync_period);
+  }
+  node->get_parameter("timesync_period", timesync_period);
+  RCLCPP_INFO(node->get_logger(), "timesync_period: %d", timesync_period);
 
   if (!node->has_parameter("num_layers"))
   {

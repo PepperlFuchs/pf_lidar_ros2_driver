@@ -148,10 +148,10 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
 
   params_->passive_timesync.update(packet.header.timestamp_raw +
                                        (uint64_t)(packet.header.num_points_packet * msg->time_increment * pow(2.0, 32)),
-                                   0, rclcpp::Clock(RCL_STEADY_TIME).now());
+                                   0, rclcpp::Clock().now());
 
   rclcpp::Time t;
-  if (config_->timesync_interval > 0)
+  if (config_->timesync_interval > 0 && params_->active_timesync.valid())
     params_->active_timesync.sensor_to_pc(packet.header.timestamp_raw, t);
   else
     params_->passive_timesync.sensor_to_pc(packet.header.timestamp_raw, t);

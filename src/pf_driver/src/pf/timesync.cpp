@@ -18,6 +18,17 @@ void TimeSync::reset(double since)
   RCLCPP_INFO(rclcpp::get_logger("timesync"), "reset %f", since);
 }
 
+void TimeSync::init(int period)
+{
+  reset(0.0);
+  period_ = period;
+}
+
+bool TimeSync::valid(void)
+{
+  return (samples_.size() > 0);
+}
+
 void TimeSync::raw_to_rclcpp(uint64_t raw, rclcpp::Time& cppt)
 {
   int32_t s = (int32_t)((raw >> 32) & 0x7ffffffful);
@@ -46,6 +57,7 @@ void TimeSync::sensor_to_pc(uint64_t sensor_time_raw, rclcpp::Time& pc_time)
 
 void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp::Time pc_time)
 {
+  const int nominal_samples = 200;
   TimeSync_Sample sample;
 
   if (req_duration_us > 50000)
@@ -59,13 +71,26 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     if (samples_.size() > 0)
     {
       double since_last_update = (sample.sensor_time - samples_.back().sensor_time).seconds();
-      if (since_last_update < 0.1)
-      {
-        return;
-      }
+
       if (since_last_update > 1.0)
       {
         reset(since_last_update);
+      }
+      else
+      {
+        if (samples_.size() >= nominal_samples)
+        {
+          double min_interval = 0.1;
+          if (period_ > 0)
+          {
+            min_interval = (0.001 * (double)period_) / nominal_samples;
+          }
+
+          if (since_last_update < min_interval)
+          {
+            return;
+          }
+        }
       }
     }
 
@@ -75,7 +100,7 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     samples_.push_back(sample);
   }
 
-  if (samples_.size() > 200)
+  if (samples_.size() > nominal_samples)
   {
     sum_req_duration_us_ -= samples_.front().req_duration_us;
     samples_.pop_front();
