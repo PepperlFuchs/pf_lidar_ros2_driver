@@ -57,7 +57,8 @@ void TimeSync::sensor_to_pc(uint64_t sensor_time_raw, rclcpp::Time& pc_time)
 
 void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp::Time pc_time)
 {
-  const int nominal_samples = 200;
+  const int nominal_samples = (period_ == 0) ? 1 : 200;
+
   TimeSync_Sample sample;
 
   if (req_duration_us > 50000)
