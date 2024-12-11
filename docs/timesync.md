@@ -59,15 +59,44 @@ New timestamp pairs can be fed into an instance of `TimeSync` by calling its `up
 data.
 
 In `pf_interface`, a timer is set up to regularly trigger HTTP requests for sensor time and update the
-`TimeSync` instance `active_timesync` with the results.
+`TimeSync` instance `active_timesync` with the results. Its frequency is determined by the
+`timesync_interval` driver parameter (milliseconds). If the request took longer than 50 ms, the
+result is ignored.
 
 Another instance, `passive_timesync`, is updated each time when a scan data packet is evaluated, using
-the sensor timestamp in the packet and the ROS time when evaluation starts.  At that time of evaluation, an unknown duration has passed since physical reception.
+the sensor timestamp in the packet and the ROS time when evaluation starts.  At
+that time of evaluation, an unknown duration has passed since physical reception. The update frequency
+currently is determined implicitly by the rate of scan data packets and a hardcoded
+upper limit of 10 Hz (packets within 100 ms after an update are ignored).
 
 For ease of implementation, the `TimeSync` instances are part of the `params_` `ScanParameter` object,
 because this object is within reach for both the PF interface timer callback and during packet evaluation,
 although they strictly aren't parameters but dynamic state.
 
+The list of recorded `TimeSync_Sample` is reset whenever a non-zero
+`scan_status` in a packet header is seen, indicating a change in sample rate, a
+significant deviation from nominal `scan_frequency` or other problems. Also an
+update later than one second after the previous one would cause a reset (for
+details see `timesync.cpp`).
+
+### Changes to previous implementation
+
+In short, previously, the driver put the time of evaluation of the final
+packet of a scan into LaserScan.header.stamp.
+
+Now it represents the time when the first sample was taken. It is converted
+from sensor time into ROS time using offset and coefficient computed from
+data obtained during preceding observation of the time relationship.
+
+More precisely, in previous driver versions, the LaserScan `header.stamp` was
+set to the `rclcpp::Clock().now() - scan_time` at the time when the last
+contributing packet was parsed. Before `bugfix/laserscan-metadata`, the
+`scan_time` was mistakenly always zero so effectively this represented the time
+when the final packet of the scan was received. After
+`bugfix/laserscan-metadata`, it becomes more complicated, because `scan_time`
+is calculated correctly but doesn't necessarily represent the time between
+first sample and reception of the final packet (except with full 360° scans
+from R2000).
 
 ### Usage
 
