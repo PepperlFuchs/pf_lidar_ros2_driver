@@ -7,6 +7,8 @@
 
 #include "pf_driver/pf/pf_interface.h"
 
+static volatile bool retrying = false;
+
 int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
@@ -153,7 +155,6 @@ int main(int argc, char* argv[])
   static std::shared_ptr<std::mutex> net_mtx_ = std::make_shared<std::mutex>();
   static std::shared_ptr<std::condition_variable> net_cv_ = std::make_shared<std::condition_variable>();
   static bool net_fail = false;
-  bool retrying = false;
 
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(node);
@@ -167,6 +168,7 @@ int main(int argc, char* argv[])
       // notify main thread about network failure
       {
         std::lock_guard<std::mutex> lock(*net_mtx_);
+        retrying = false;
         net_fail = true;
       }
       net_cv_->notify_one();
@@ -174,7 +176,8 @@ int main(int argc, char* argv[])
     });
   });
 
-  while (rclcpp::ok())
+  if (rclcpp::ok())
+  do
   {
     net_fail = false;
     if (!pf_interface.init(info, config, params, topic, frame_id, num_layers))
@@ -199,6 +202,8 @@ int main(int argc, char* argv[])
     RCLCPP_ERROR(node->get_logger(), "Network failure");
     pf_interface.terminate();
   }
+  while (rclcpp::ok() && retrying);
+
   std::cout << "I am here" << std::endl;
   pf_interface.stop_transmission();
   rclcpp::shutdown();
