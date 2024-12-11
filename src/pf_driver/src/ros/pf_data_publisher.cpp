@@ -117,14 +117,45 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
   for (int i = 0; i < packet.header.num_points_packet; i++)
   {
     float data;
-    if (packet.distance[i] == 0xFFFFFFFF)
-      data = std::numeric_limits<std::uint32_t>::quiet_NaN();
-    else
-      data = packet.distance[i] / 1000.0;
+
+    if (!packet.amplitude.empty())  // amplitude<32 indicates invalid measurement
+    {
+      float echo;
+      if (packet.amplitude[i] >= 32)
+      {
+        data = packet.distance[i] / 1000.0;
+        echo = packet.amplitude[i];
+      }
+      else if (packet.amplitude[i] == 0 || packet.amplitude[i] == 6)  // no or weak echo
+      {
+        data = std::numeric_limits<float>::infinity();
+        echo = std::numeric_limits<float>::quiet_NaN();
+      }
+      else  // invalid measurement due to some other reason (TBD: blinding => -Inf?)
+      {
+        data = std::numeric_limits<float>::quiet_NaN();
+        echo = std::numeric_limits<float>::quiet_NaN();
+      }
+      msg->intensities[idx + i] = std::move(echo);
+    }
+    else  // no amplitude came with packet, invalid values are encoded as all bits set
+    {
+      uint32_t distance_max =  // all bits set in 32 (A/B) or 20 bit (C/C1) => invalid measurement
+          ((std::is_same<T, PFR2000Packet_A>::value) || (std::is_same<T, PFR2000Packet_B>::value)) ? 0xffffffffu :
+                                                                                                     0x000fffffu;
+
+      if (packet.distance[i] < distance_max)
+      {
+        data = packet.distance[i] / 1000.0;
+      }
+      else
+      {
+        data = std::numeric_limits<float>::quiet_NaN();
+      }
+    }
     msg->ranges[idx + i] = std::move(data);
-    if (!packet.amplitude.empty() && packet.amplitude[i] >= 32)
-      msg->intensities[idx + i] = packet.amplitude[i];
   }
+
   if (packet.header.num_points_scan == (idx + packet.header.num_points_packet))
   {
     if (msg)
