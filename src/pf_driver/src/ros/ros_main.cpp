@@ -160,6 +160,8 @@ int main(int argc, char* argv[])
   config->watchdogtimeout = node->get_parameter("watchdogtimeout").get_parameter_value().get<int>();
   config->watchdog = node->get_parameter("watchdog").get_parameter_value().get<bool>();
   RCLCPP_INFO(node->get_logger(), "start_angle: %d", config->start_angle);
+  config->timesync_interval = node->get_parameter("timesync_interval").get_parameter_value().get<int>();
+  config->timesync_period = node->get_parameter("timesync_period").get_parameter_value().get<int>();
 
   std::shared_ptr<ScanParameters> params = std::make_shared<ScanParameters>();
   params->apply_correction = node->get_parameter("apply_correction").get_parameter_value().get<bool>();
