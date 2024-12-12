@@ -112,7 +112,7 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
   rclcpp::Time sensor_base(samples_.back().sensor_time);
   rclcpp::Time pc_base(samples_.back().pc_time);
 
-  #if 0
+#if 0
     for(auto it=samples_.begin(); it!=samples_.end(); ++it)
     {
         if (it->sensor_time < sensor_base)
@@ -124,7 +124,7 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
             pc_base = it->pc_time;
         }
     }
-  #endif
+#endif
 #else
   rclcpp::Time sensor_base((uint64_t)0, samples_.front().sensor_time.get_clock_type());
   rclcpp::Time pc_base((uint64_t)0, samples_.front().pc_time.get_clock_type());
@@ -174,8 +174,8 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     double time_factor = (den == 0.0) ? 1.0 : ((n * sum_xy - sum_x * sum_y) / den);
     double base_time = (sum_y - time_factor * sum_x) / n;
 
-    RCLCPP_INFO(rclcpp::get_logger("timesync"), "regress: %f %f %f %f %f %f %f %f",
-        sum_x, sum_xx, sum_y, sum_xy, den, time_factor, base_time, n);
+    RCLCPP_INFO(rclcpp::get_logger("timesync"), "regress: %f %f %f %f %f %f %f %f", sum_x, sum_xx, sum_y, sum_xy, den,
+                time_factor, base_time, n);
 #endif
 
     /* Update state, protected by access_ mutex */
