@@ -107,16 +107,12 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     samples_.pop_front();
   }
 
-#if 0
-    sensor_base = rclcpp::Time((uint64_t)0, samples_.begin()->sensor_time.get_clock_type());
-    pc_base = rclcpp::Time((uint64_t)0, samples_.begin()->pc_time.get_clock_type());
-#else
-
+#if 1
   /* Offsets to keep values small in calculation below */
-  rclcpp::Time sensor_base = samples_.begin()->sensor_time;
-  rclcpp::Time pc_base = samples_.begin()->pc_time;
+  rclcpp::Time sensor_base(samples_.back().sensor_time);
+  rclcpp::Time pc_base(samples_.back().pc_time);
 
-#if 0
+  #if 0
     for(auto it=samples_.begin(); it!=samples_.end(); ++it)
     {
         if (it->sensor_time < sensor_base)
@@ -128,10 +124,37 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
             pc_base = it->pc_time;
         }
     }
-#endif
+  #endif
+#else
+  rclcpp::Time sensor_base((uint64_t)0, samples_.front().sensor_time.get_clock_type());
+  rclcpp::Time pc_base((uint64_t)0, samples_.front().pc_time.get_clock_type());
 #endif
 
   {
+    double time_factor = 1.0;
+    double base_time = 0.0;
+
+#if 1
+    base_time = 0.0;
+    for (auto it = samples_.begin(); it != samples_.end(); ++it)
+    {
+      base_time += ((it->pc_time - pc_base) - (it->sensor_time - sensor_base)).seconds();
+    }
+
+    /* Compute linearity error simply from periods between last and first timestamp pairs. */
+    if (samples_.size() > 1)
+    {
+      base_time /= (double)(samples_.size() - 1);
+
+      double sensor_period = (samples_.back().sensor_time - samples_.front().sensor_time).seconds();
+      double pc_period = (samples_.back().pc_time - samples_.front().pc_time).seconds();
+
+      if (pc_period > 0.0)
+      {
+        time_factor = pc_period / sensor_period;
+      }
+    }
+#else
     /* Compute sums for linear regression */
     double sum_x = 0, sum_xx = 0, sum_y = 0, sum_xy = 0;
     for (auto it = samples_.begin(); it != samples_.end(); ++it)
@@ -151,6 +174,10 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     double time_factor = (den == 0.0) ? 1.0 : ((n * sum_xy - sum_x * sum_y) / den);
     double base_time = (sum_y - time_factor * sum_x) / n;
 
+    RCLCPP_INFO(rclcpp::get_logger("timesync"), "regress: %f %f %f %f %f %f %f %f",
+        sum_x, sum_xx, sum_y, sum_xy, den, time_factor, base_time, n);
+#endif
+
     /* Update state, protected by access_ mutex */
     {
       std::lock_guard<std::mutex> guard(access_);
@@ -164,7 +191,7 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
 
   unsigned mean_req_duration_us = sum_req_duration_us_ / samples_.size();
 
-  RCLCPP_INFO(rclcpp::get_logger("timesync"), "update: %f %f %f %f %f %f %u %lu", sample.sensor_time.seconds(),
+  RCLCPP_INFO(rclcpp::get_logger("timesync"), "update: %f %f %f %f %f %f %u %u", sample.sensor_time.seconds(),
               sample.pc_time.seconds(), sensor_base.seconds(), pc_base.seconds(), base_time_, scale_time_,
-              req_duration_us, mean_req_duration_us / samples_.size());
+              (unsigned)req_duration_us, (unsigned)samples_.size());
 }
