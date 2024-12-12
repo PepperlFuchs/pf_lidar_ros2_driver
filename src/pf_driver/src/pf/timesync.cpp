@@ -144,10 +144,10 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     /* Compute linearity error simply from periods between last and first timestamp pairs. */
     if (samples_.size() > 1)
     {
-      base_time /= (double)(samples_.size() - 1);
+      base_time /= (double)(samples_.size());
 
-      double sensor_period = (samples_.back().sensor_time - samples_.front().sensor_time).seconds();
       double pc_period = (samples_.back().pc_time - samples_.front().pc_time).seconds();
+      double sensor_period = (samples_.back().sensor_time - samples_.front().sensor_time).seconds();
 
       if (pc_period > 0.0)
       {
