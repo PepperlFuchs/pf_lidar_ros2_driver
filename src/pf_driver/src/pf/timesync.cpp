@@ -79,7 +79,8 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
       }
       else
       {
-        if (samples_.size() >= nominal_samples)
+        /* Rate limiting: Try to keep nominal_samples approximately evenly distributed over period */
+        // if (samples_.size() >= nominal_samples)
         {
           double min_interval = 0.1;
           if (period_ > 0)
@@ -107,34 +108,21 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     samples_.pop_front();
   }
 
-#if 1
   /* Offsets to keep values small in calculation below */
+
+  /* These have to be considered in addition to the computed
+    offset and scale, see sensor_to_pc() method above */
+
   rclcpp::Time sensor_base(samples_.back().sensor_time);
   rclcpp::Time pc_base(samples_.back().pc_time);
-
-#if 0
-    for(auto it=samples_.begin(); it!=samples_.end(); ++it)
-    {
-        if (it->sensor_time < sensor_base)
-        {
-            sensor_base = it->sensor_time;
-        }
-        if (it->pc_time < pc_base)
-        {
-            pc_base = it->pc_time;
-        }
-    }
-#endif
-#else
-  rclcpp::Time sensor_base((uint64_t)0, samples_.front().sensor_time.get_clock_type());
-  rclcpp::Time pc_base((uint64_t)0, samples_.front().pc_time.get_clock_type());
-#endif
 
   {
     double time_factor = 1.0;
     double base_time = 0.0;
 
-#if 1
+#if 0
+    /* Average */
+
     base_time = 0.0;
     for (auto it = samples_.begin(); it != samples_.end(); ++it)
     {
@@ -155,7 +143,9 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
       }
     }
 #else
-    /* Compute sums for linear regression */
+    /* Linear regression */
+
+    /* Compute sums */
     double sum_x = 0, sum_xx = 0, sum_y = 0, sum_xy = 0;
     for (auto it = samples_.begin(); it != samples_.end(); ++it)
     {
@@ -168,11 +158,11 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
       sum_xy += x * y;
     }
 
-    /* Compute base and coefficent using linear regression */
+    /* Compute base and coefficent */
     double n = (double)samples_.size();
     double den = (n * sum_xx - sum_x * sum_x);
-    double time_factor = (den == 0.0) ? 1.0 : ((n * sum_xy - sum_x * sum_y) / den);
-    double base_time = (sum_y - time_factor * sum_x) / n;
+    time_factor = (den == 0.0) ? 1.0 : ((n * sum_xy - sum_x * sum_y) / den);
+    base_time = (sum_y - time_factor * sum_x) / n;
 
     RCLCPP_INFO(rclcpp::get_logger("timesync"), "regress: %f %f %f %f %f %f %f %f", sum_x, sum_xx, sum_y, sum_xy, den,
                 time_factor, base_time, n);
