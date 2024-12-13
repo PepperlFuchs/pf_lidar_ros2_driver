@@ -29,7 +29,8 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
 
   has_iq_parameters_ = false;
 
-  protocol_interface_ = std::make_shared<PFSDPBase>(node_, info, config, params);
+  protocol_interface_ = std::make_shared<PFSDPBase>(node_, info_, config_, params_);
+
   // This is the first time ROS communicates with the device
   auto opi = protocol_interface_->get_protocol_info();
   if (opi.isError)
@@ -44,10 +45,25 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
     return false;
   }
 
-  if (!handle_version(opi.version_major, opi.version_minor, opi.device_family, topic, frame_id, num_layers))
+  /* Handle multi-layer sensors a little bit differently */
+  if (opi.device_family == 5 || opi.device_family == 7)
   {
-    RCLCPP_ERROR(node_->get_logger(), "Device unsupported");
-    return false;
+    protocol_interface_ = std::make_shared<PFSDP_2300>(node_, info_, config_, params_);
+  }
+  else
+  {
+    protocol_interface_ = std::make_shared<PFSDP_2000>(node_, info_, config_, params_);
+  }
+
+  if (opi.device_family == 7)
+  {
+    reader_ = std::shared_ptr<PFPacketReader>(
+        new PointcloudPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str(), num_layers));
+  }
+  else
+  {
+    reader_ = std::shared_ptr<PFPacketReader>(
+        new LaserscanPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str()));
   }
 
   if (std::find(opi.commands.begin(), opi.commands.end(), "list_iq_parameters") != opi.commands.end())
@@ -55,6 +71,7 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
     has_iq_parameters_ = true;
   }
 
+  product_ = protocol_interface_->get_product();
   RCLCPP_INFO(node_->get_logger(), "Device found: %s", product_.c_str());
 
   // release previous handles
@@ -230,52 +247,6 @@ void PFInterface::connection_failure_cb()
     std::cout << "trying to reconnect..." << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
-}
-
-// factory functions
-bool PFInterface::handle_version(int major_version, int minor_version, int device_family, const std::string& topic,
-                                 const std::string& frame_id, const uint16_t num_layers)
-{
-  std::string expected_dev = "";
-  if (device_family == 1 || device_family == 3 || device_family == 6)
-  {
-    expected_dev = "R2000";
-    protocol_interface_ = std::make_shared<PFSDP_2000>(node_, info_, config_, params_);
-    reader_ = std::shared_ptr<PFPacketReader>(
-        new LaserscanPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str()));
-  }
-  else if (device_family == 5 || device_family == 7)
-  {
-    expected_dev = "R2300";
-    protocol_interface_ = std::make_shared<PFSDP_2300>(node_, info_, config_, params_);
-
-    if (device_family == 5)
-    {
-      std::string part = protocol_interface_->get_part();
-      reader_ = std::shared_ptr<PFPacketReader>(
-          new PointcloudPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str(), num_layers, part.c_str()));
-    }
-    else if (device_family == 7)
-    {
-      reader_ = std::shared_ptr<PFPacketReader>(
-          new LaserscanPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str()));
-    }
-    else
-    {
-      return false;
-    }
-  }
-  else
-  {
-    return false;
-  }
-  std::string product_name = protocol_interface_->get_product();
-  if (product_name.find(expected_dev) != std::string::npos)
-  {
-    product_ = expected_dev;
-    return true;
-  }
-  return false;
 }
 
 void PFInterface::add_pf_services(void)

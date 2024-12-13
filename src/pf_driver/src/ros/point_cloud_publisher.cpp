@@ -8,8 +8,7 @@
 
 PointcloudPublisher::PointcloudPublisher(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<ScanConfig> config,
                                          std::shared_ptr<ScanParameters> params, const std::string& scan_topic,
-                                         const std::string& frame_id, const uint16_t num_layers,
-                                         const std::string& part)
+                                         const std::string& frame_id, const uint16_t num_layers)
   : PFDataPublisher(config, params), node_(node), layer_prev_(-1)
 {
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
