@@ -17,11 +17,6 @@ PFSDP_2000::PFSDP_2000(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<Handl
       node_->add_on_set_parameters_callback(std::bind(&PFSDP_2000::reconfig_callback, this, std::placeholders::_1));
 }
 
-std::string PFSDP_2000::get_product()
-{
-  return get_parameter_str("product");
-}
-
 void PFSDP_2000::get_scan_parameters()
 {
   auto resp = get_parameter("radial_range_min", "radial_range_max", "sampling_rate_max");

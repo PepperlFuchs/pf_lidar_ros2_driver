@@ -251,10 +251,9 @@ bool PFInterface::handle_version(int major_version, int minor_version, int devic
 
     if (device_family == 5)
     {
-      std::string part = protocol_interface_->get_part();
       params_->scan_time_factor = num_layers;
       reader_ = std::shared_ptr<PFPacketReader>(
-          new PointcloudPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str(), num_layers, part.c_str()));
+          new PointcloudPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str(), num_layers));
     }
     else if (device_family == 7)
     {
