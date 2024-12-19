@@ -367,12 +367,7 @@ bool PFSDPBase::feed_watchdog(const std::string& handle)
 
 std::string PFSDPBase::get_product()
 {
-  return std::string("");
-}
-
-std::string PFSDPBase::get_part()
-{
-  return std::string("");
+  return get_parameter_str("product");
 }
 
 void PFSDPBase::get_scan_parameters()

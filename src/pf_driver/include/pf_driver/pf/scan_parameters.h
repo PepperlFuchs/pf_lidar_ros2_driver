@@ -3,15 +3,11 @@
 #pragma pack(push, sp, 1)
 struct ScanParameters
 {
-  double angular_fov = 0.0;
   double radial_range_min = 0.0;
   double radial_range_max = 0.0;
-  double angle_min = 0.0;
-  double angle_max = 0.0;
-  uint16_t layers_enabled = 0;
-  double scan_freq = 0.0;        // needed to calculate scan resolution in R2300
-  uint16_t h_enabled_layer = 0;  // highest enabled layer
   bool apply_correction = true;
+  int sampling_rate_max = 252000;
+  int scan_time_factor = 1;
 
   // void print()
   // {

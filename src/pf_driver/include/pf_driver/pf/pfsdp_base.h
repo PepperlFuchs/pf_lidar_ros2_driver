@@ -122,8 +122,6 @@ public:
 
   virtual std::string get_product();
 
-  virtual std::string get_part();
-
   virtual void get_scan_parameters();
 
   void setup_parameters_callback();
