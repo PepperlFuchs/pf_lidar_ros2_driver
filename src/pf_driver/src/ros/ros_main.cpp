@@ -7,6 +7,8 @@
 
 #include "pf_driver/pf/pf_interface.h"
 
+static volatile bool retrying = false;
+
 int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
@@ -171,7 +173,6 @@ int main(int argc, char* argv[])
   static std::shared_ptr<std::mutex> net_mtx_ = std::make_shared<std::mutex>();
   static std::shared_ptr<std::condition_variable> net_cv_ = std::make_shared<std::condition_variable>();
   static bool net_fail = false;
-  bool retrying = false;
 
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(node);
@@ -185,6 +186,7 @@ int main(int argc, char* argv[])
       // notify main thread about network failure
       {
         std::lock_guard<std::mutex> lock(*net_mtx_);
+        retrying = false;
         net_fail = true;
       }
       net_cv_->notify_one();
@@ -192,31 +194,35 @@ int main(int argc, char* argv[])
     });
   });
 
-  while (rclcpp::ok())
+  if (rclcpp::ok())
   {
-    net_fail = false;
-    if (!pf_interface.init(info, config, params, topic, frame_id, num_layers))
+    do
     {
-      RCLCPP_ERROR(node->get_logger(), "Unable to initialize device");
-      if (retrying)
+      net_fail = false;
+      if (!pf_interface.init(info, config, params, topic, frame_id, num_layers))
       {
-        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-        continue;
+        RCLCPP_ERROR(node->get_logger(), "Unable to initialize device");
+        if (retrying)
+        {
+          std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+          continue;
+        }
+        return -1;
       }
-      return -1;
-    }
-    if (!pf_interface.start_transmission(net_mtx_, net_cv_, net_fail))
-    {
-      RCLCPP_ERROR(node->get_logger(), "Unable to start scan");
-      return -1;
-    }
-    retrying = true;
-    // wait for condition variable
-    std::unique_lock<std::mutex> net_lock(*net_mtx_);
-    net_cv_->wait(net_lock, [] { return net_fail; });
-    RCLCPP_ERROR(node->get_logger(), "Network failure");
-    pf_interface.terminate();
+      if (!pf_interface.start_transmission(net_mtx_, net_cv_, net_fail))
+      {
+        RCLCPP_ERROR(node->get_logger(), "Unable to start scan");
+        return -1;
+      }
+      retrying = true;
+      // wait for condition variable
+      std::unique_lock<std::mutex> net_lock(*net_mtx_);
+      net_cv_->wait(net_lock, [] { return net_fail; });
+      RCLCPP_ERROR(node->get_logger(), "Network failure");
+      pf_interface.terminate();
+    } while (rclcpp::ok() && retrying);
   }
+
   std::cout << "I am here" << std::endl;
   pf_interface.stop_transmission();
   rclcpp::shutdown();
