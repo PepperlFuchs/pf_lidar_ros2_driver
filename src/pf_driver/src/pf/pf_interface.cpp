@@ -241,6 +241,7 @@ bool PFInterface::handle_version(int major_version, int minor_version, int devic
   {
     expected_dev = "R2000";
     protocol_interface_ = std::make_shared<PFSDP_2000>(node_, info_, config_, params_);
+    params_->scan_time_factor = 1;
     reader_ = std::shared_ptr<PFPacketReader>(
         new LaserscanPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str()));
   }
@@ -257,6 +258,7 @@ bool PFInterface::handle_version(int major_version, int minor_version, int devic
     }
     else if (device_family == 7)
     {
+      params_->scan_time_factor = 1;
       reader_ = std::shared_ptr<PFPacketReader>(
           new LaserscanPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str()));
     }

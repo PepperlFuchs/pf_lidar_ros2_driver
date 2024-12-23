@@ -24,7 +24,6 @@ void PFSDP_2300::get_scan_parameters()
   params_->radial_range_max = parser_utils::to_float(resp["radial_range_max"]);
   params_->radial_range_min = parser_utils::to_float(resp["radial_range_min"]);
   params_->sampling_rate_max = parser_utils::to_long(resp["sampling_rate_max"]);
-  params_->scan_time_factor = 1;
 }
 
 void PFSDP_2300::declare_specific_parameters()
