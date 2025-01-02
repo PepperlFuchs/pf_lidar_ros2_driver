@@ -11,8 +11,7 @@
 #include "pf_driver/pf/pf_packet_reader.h"
 #include "pf_driver/pf/pipeline.h"
 #include "pf_driver/communication/transport.h"
-#include "pf_driver/pf/r2000/pfsdp_2000.h"
-#include "pf_driver/pf/r2300/pfsdp_2300.h"
+#include "pf_driver/pf/pfsdp_base.h"
 
 #include "pf_interfaces/srv/pfsdp_get_protocol_info.hpp"
 #include "pf_interfaces/srv/pfsdp_reboot_device.hpp"

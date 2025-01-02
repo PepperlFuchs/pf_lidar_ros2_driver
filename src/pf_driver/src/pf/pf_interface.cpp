@@ -45,15 +45,7 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
     return false;
   }
 
-  /* Handle multi-layer sensors a little bit differently */
-  if (opi.device_family == 5 || opi.device_family == 7)
-  {
-    protocol_interface_ = std::make_shared<PFSDP_2300>(node_, info_, config_, params_);
-  }
-  else
-  {
-    protocol_interface_ = std::make_shared<PFSDP_2000>(node_, info_, config_, params_);
-  }
+  protocol_interface_ = std::make_shared<PFSDPBase>(node_, info_, config_, params_);
 
   if (opi.device_family == 7)
   {

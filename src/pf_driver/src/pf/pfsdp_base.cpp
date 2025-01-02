@@ -11,6 +11,8 @@ PFSDPBase::PFSDPBase(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<HandleI
                      std::shared_ptr<ScanConfig> config, std::shared_ptr<ScanParameters> params)
   : http_interface(new HTTPInterface(info->hostname, "cmd")), node_(node), info_(info), config_(config), params_(params)
 {
+  parameters_handle_ =
+      node_->add_on_set_parameters_callback(std::bind(&PFSDPBase::reconfig_callback, this, std::placeholders::_1));
 }
 
 void PFSDPBase::copy_status_from_json(int32_t& error_code, std::string& error_text, Json::Value json_resp)
@@ -372,6 +374,10 @@ std::string PFSDPBase::get_product()
 
 void PFSDPBase::get_scan_parameters()
 {
+  auto resp = get_parameter("radial_range_min", "radial_range_max", "sampling_rate_max");
+  params_->radial_range_max = parser_utils::to_float(resp["radial_range_max"]);
+  params_->radial_range_min = parser_utils::to_float(resp["radial_range_min"]);
+  params_->sampling_rate_max = parser_utils::to_long(resp["sampling_rate_max"]);
 }
 
 // handle "dynamic" parameters
@@ -379,6 +385,7 @@ void PFSDPBase::get_scan_parameters()
 rcl_interfaces::msg::SetParametersResult PFSDPBase::reconfig_callback(const std::vector<rclcpp::Parameter>& parameters)
 {
   rcl_interfaces::msg::SetParametersResult result;
+
   result.successful = reconfig_callback_impl(parameters);
 
   if (result.successful)
@@ -444,6 +451,18 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     else if (parameter.get_name() == "skip_scans")
     {
       config_->skip_scans = parameter.as_int();
+    }
+    else if (parameter.get_name() == "packet_type")
+    {
+      std::string packet_type = parameter.as_string();
+      if (packet_type == "A" || packet_type == "B" || packet_type == "C" || packet_type == "C1")
+      {
+        config_->packet_type = packet_type;
+      }
+      else
+      {
+        successful = false;
+      }
     }
   }
 
