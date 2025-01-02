@@ -20,7 +20,7 @@ PFSDP_2300::PFSDP_2300(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<Handl
 
 void PFSDP_2300::get_scan_parameters()
 {
-  auto resp = get_parameter("radial_range_min", "radial_range_max", "sampling_rate_max", "layer_count");
+  auto resp = get_parameter("radial_range_min", "radial_range_max", "sampling_rate_max");
   params_->radial_range_max = parser_utils::to_float(resp["radial_range_max"]);
   params_->radial_range_min = parser_utils::to_float(resp["radial_range_min"]);
   params_->sampling_rate_max = parser_utils::to_long(resp["sampling_rate_max"]);
