@@ -17,21 +17,12 @@ PFSDP_2000::PFSDP_2000(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<Handl
       node_->add_on_set_parameters_callback(std::bind(&PFSDP_2000::reconfig_callback, this, std::placeholders::_1));
 }
 
-std::string PFSDP_2000::get_product()
-{
-  return get_parameter_str("product");
-}
-
 void PFSDP_2000::get_scan_parameters()
 {
-  auto resp = get_parameter("angular_fov", "radial_range_min", "radial_range_max", "scan_frequency");
-  params_->angular_fov = parser_utils::to_float(resp["angular_fov"]) * M_PI / 180.0;
+  auto resp = get_parameter("radial_range_min", "radial_range_max", "sampling_rate_max");
   params_->radial_range_max = parser_utils::to_float(resp["radial_range_max"]);
   params_->radial_range_min = parser_utils::to_float(resp["radial_range_min"]);
-
-  params_->angle_min = config_->start_angle / 10000.0f * M_PI / 180.0;
-  params_->angle_max = params_->angle_min + params_->angular_fov;
-  params_->scan_freq = parser_utils::to_float(resp["scan_frequency"]);
+  params_->sampling_rate_max = parser_utils::to_long(resp["sampling_rate_max"]);
 }
 
 void PFSDP_2000::declare_specific_parameters()
