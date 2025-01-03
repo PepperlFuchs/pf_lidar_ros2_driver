@@ -182,7 +182,8 @@ void PointcloudPublisher::project_laser(sensor_msgs::msg::PointCloud2& c, sensor
   {
     // num of points in cloud is sometimes less than that in laser scan because of
     // https://github.com/ros-perception/laser_geometry/blob/indigo-devel/src/laser_geometry.cpp#L110
-    if (isnan(msg->ranges[i]) || isinf(msg->ranges[i]) || msg->ranges[i] < msg->range_min || msg->ranges[i] >= msg->range_max)
+    if (isnan(msg->ranges[i]) || isinf(msg->ranges[i]) || msg->ranges[i] < msg->range_min ||
+        msg->ranges[i] >= msg->range_max)
     {
       continue;
     }
