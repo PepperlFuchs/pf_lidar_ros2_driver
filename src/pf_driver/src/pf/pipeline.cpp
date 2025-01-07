@@ -89,10 +89,12 @@ void Pipeline::run_writer()
   running_ = false;
 
   // notify main thread about network failure
-  if (net_mtx_->try_lock())
+  std::cerr << "pipe: try_lock" << std::endl;
   {
+    std::lock_guard<std::mutex> lock(*net_mtx_);
+    std::cerr << "pipe: locked" << std::endl;
     net_fail_ = true;
-    net_mtx_->unlock();
+    std::cerr << "pipe: unlock" << std::endl;
   }
   net_cv_->notify_one();
 }
