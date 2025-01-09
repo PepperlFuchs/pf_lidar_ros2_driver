@@ -43,8 +43,8 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
     return false;
   }
 
-  if ((std::find(opi.commands.begin(), opi.commands.end(), "request_handle_udp") == opi.commands.end())
-    && (std::find(opi.commands.begin(), opi.commands.end(), "request_handle_tcp") == opi.commands.end()))
+  if ((std::find(opi.commands.begin(), opi.commands.end(), "request_handle_udp") == opi.commands.end()) &&
+      (std::find(opi.commands.begin(), opi.commands.end(), "request_handle_tcp") == opi.commands.end()))
   {
     RCLCPP_ERROR(node_->get_logger(), "The device doesn't support scan data output");
     return false;
