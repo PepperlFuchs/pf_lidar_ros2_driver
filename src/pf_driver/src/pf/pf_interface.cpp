@@ -167,7 +167,7 @@ bool PFInterface::start_transmission(std::shared_ptr<std::mutex> net_mtx,
     return false;
 
   protocol_interface_->start_scanoutput();
-  // start watchdog timer is watchdog is true in config AND if the device is not R2000
+  // start watchdog timer is watchdog is true in config AND if the device is R2000
   // since watchdog for R2300 is always off
   if (config_->watchdog && protocol_interface_->get_product().find("R2000") != std::string::npos)
   {
@@ -308,28 +308,22 @@ std::unique_ptr<Pipeline> PFInterface::get_pipeline(const std::string& packet_ty
 {
   std::shared_ptr<Parser<PFPacket>> parser;
   std::shared_ptr<Writer<PFPacket>> writer;
-  if (product_ == "R2000")
+  RCLCPP_INFO(node_->get_logger(), "PacketType is: %s", packet_type.c_str());
+  if (packet_type == "A")
   {
-    RCLCPP_DEBUG(node_->get_logger(), "PacketType is: %s", packet_type.c_str());
-    if (packet_type == "A")
-    {
-      parser = std::unique_ptr<Parser<PFPacket>>(new PFR2000_A_Parser);
-    }
-    else if (packet_type == "B")
-    {
-      parser = std::unique_ptr<Parser<PFPacket>>(new PFR2000_B_Parser);
-    }
-    else if (packet_type == "C")
-    {
-      parser = std::unique_ptr<Parser<PFPacket>>(new PFR2000_C_Parser);
-    }
+    parser = std::unique_ptr<Parser<PFPacket>>(new PFR2000_A_Parser);
   }
-  else if (product_ == "R2300")
+  else if (packet_type == "B")
   {
-    if (packet_type == "C1")
-    {
-      parser = std::unique_ptr<Parser<PFPacket>>(new PFR2300_C1_Parser);
-    }
+    parser = std::unique_ptr<Parser<PFPacket>>(new PFR2000_B_Parser);
+  }
+  else if (packet_type == "C")
+  {
+    parser = std::unique_ptr<Parser<PFPacket>>(new PFR2000_C_Parser);
+  }
+  else if (packet_type == "C1")
+  {
+    parser = std::unique_ptr<Parser<PFPacket>>(new PFR2300_C1_Parser);
   }
   if (!parser)
   {
