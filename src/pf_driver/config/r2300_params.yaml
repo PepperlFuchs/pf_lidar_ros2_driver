@@ -10,5 +10,4 @@ pf_r2300:
     frame_id: "scanner_link"
     watchdogtimeout: 60000  # DO NOT MODIFY - this is the only valid value
     watchdog: false
-    num_layers: 4
     apply_correction: true

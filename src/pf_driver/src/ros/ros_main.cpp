@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
     do
     {
       net_fail = false;
-      if (!pf_interface.init(info, config, params, topic, frame_id, num_layers))
+      if (!pf_interface.init(info, config, params, topic, frame_id))
       {
         RCLCPP_ERROR(node->get_logger(), "Unable to initialize device");
         if (retrying)
@@ -191,6 +191,7 @@ int main(int argc, char* argv[])
         }
         return -1;
       }
+      node->set_parameter(rclcpp::Parameter("num_layers", params->layer_count));
       if (!pf_interface.start_transmission(net_mtx_, net_cv_, net_fail))
       {
         RCLCPP_ERROR(node->get_logger(), "Unable to start scan");

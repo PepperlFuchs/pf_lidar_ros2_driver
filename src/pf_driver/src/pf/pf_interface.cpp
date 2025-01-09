@@ -16,8 +16,7 @@ PFInterface::PFInterface(std::shared_ptr<rclcpp::Node> node) : node_(node), stat
 }
 
 bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanConfig> config,
-                       std::shared_ptr<ScanParameters> params, const std::string& topic, const std::string& frame_id,
-                       const uint16_t num_layers)
+                       std::shared_ptr<ScanParameters> params, const std::string& topic, const std::string& frame_id)
 {
   config_ = config;
   info_ = info;
@@ -25,7 +24,6 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
 
   topic_ = topic;
   frame_id_ = frame_id;
-  num_layers_ = num_layers;
 
   has_iq_parameters_ = false;
 
@@ -46,11 +44,14 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
 
   protocol_interface_ = std::make_shared<PFSDPBase>(node_, info_, config_, params_);
 
-  if (opi.device_family == 5)
+  // update global config_
+  protocol_interface_->get_scan_parameters();
+
+  if (params_->layer_count > 1 && params_->inclination_count > 1)
   {
-    params_->scan_time_factor = num_layers;
+    params_->scan_time_factor = params_->layer_count;
     reader_ = std::shared_ptr<PFPacketReader>(
-        new PointcloudPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str(), num_layers));
+        new PointcloudPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str(), params_->layer_count));
   }
   else
   {
@@ -207,7 +208,7 @@ void PFInterface::terminate()
 
 bool PFInterface::init()
 {
-  return init(info_, config_, params_, topic_, frame_id_, num_layers_);
+  return init(info_, config_, params_, topic_, frame_id_);
 }
 
 void PFInterface::start_watchdog_timer(float duration)
