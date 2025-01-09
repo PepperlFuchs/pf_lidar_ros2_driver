@@ -390,7 +390,7 @@ void PFSDPBase::get_scan_parameters()
 
       if (val.isArray())
       {
-        for (int i=0; i<val.size(); ++i)
+        for (int i = 0; i < val.size(); ++i)
         {
           if (val[i].asDouble() != 0.0)
           {

@@ -132,7 +132,7 @@ public:
 
   void pfsdp_init(const rclcpp::Parameter& parameter);
 
-virtual bool reconfig_callback_impl(const std::vector<rclcpp::Parameter>& parameters);
+  virtual bool reconfig_callback_impl(const std::vector<rclcpp::Parameter>& parameters);
 
   rcl_interfaces::msg::SetParametersResult reconfig_callback(const std::vector<rclcpp::Parameter>& parameters);
 };
