@@ -29,8 +29,7 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
 
   has_iq_parameters_ = false;
 
-  protocol_interface_ = std::make_shared<PFSDPBase>(node_, info_, config_, params_);
-
+  protocol_interface_ = std::make_shared<PFSDPBase>(node_, info, config, params);
   // This is the first time ROS communicates with the device
   auto opi = protocol_interface_->get_protocol_info();
   if (opi.isError)
@@ -49,11 +48,13 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
 
   if (opi.device_family == 7)
   {
+    params_->scan_time_factor = num_layers;
     reader_ = std::shared_ptr<PFPacketReader>(
         new PointcloudPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str(), num_layers));
   }
   else
   {
+    params_->scan_time_factor = 1;
     reader_ = std::shared_ptr<PFPacketReader>(
         new LaserscanPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str()));
   }
