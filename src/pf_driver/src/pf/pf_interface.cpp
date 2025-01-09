@@ -27,7 +27,8 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
 
   has_iq_parameters_ = false;
 
-  protocol_interface_ = std::make_shared<PFSDPBase>(node_, info, config, params);
+  protocol_interface_ = std::make_shared<PFSDPBase>(node_, info_, config_, params_);
+
   // This is the first time ROS communicates with the device
   auto opi = protocol_interface_->get_protocol_info();
   if (opi.isError)
@@ -42,7 +43,12 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
     return false;
   }
 
-  protocol_interface_ = std::make_shared<PFSDPBase>(node_, info_, config_, params_);
+  if ((std::find(opi.commands.begin(), opi.commands.end(), "request_handle_udp") == opi.commands.end())
+    && (std::find(opi.commands.begin(), opi.commands.end(), "request_handle_tcp") == opi.commands.end()))
+  {
+    RCLCPP_ERROR(node_->get_logger(), "The device doesn't support scan data output");
+    return false;
+  }
 
   // update global config_
   protocol_interface_->get_scan_parameters();
