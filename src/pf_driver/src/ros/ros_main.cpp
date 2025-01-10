@@ -14,6 +14,10 @@ int main(int argc, char* argv[])
   rclcpp::init(argc, argv);
   auto node = std::make_shared<rclcpp::Node>("pf_driver");
 
+  std::shared_ptr<ScanConfig> config = std::make_shared<ScanConfig>();
+
+  rclcpp::Parameter tmp_param;
+
   std::vector<std::string> pfsdp_init;
   std::string device, transport_str, scanner_ip, port, topic, frame_id, packet_type;
   int samples_per_scan, start_angle, max_num_points_scan, watchdogtimeout, skip_scans, num_layers;
@@ -52,31 +56,47 @@ int main(int argc, char* argv[])
 
   if (!node->has_parameter("start_angle"))
   {
-    node->declare_parameter("start_angle", start_angle);
+    node->declare_parameter("start_angle", rclcpp::PARAMETER_INTEGER);
   }
-  node->get_parameter("start_angle", start_angle);
-  RCLCPP_INFO(node->get_logger(), "start_angle: %d", start_angle);
+  if (node->get_parameter("start_angle", tmp_param))
+  {
+    config->start_angle = tmp_param.as_int();
+    config->start_angle_set = true;
+    RCLCPP_INFO(node->get_logger(), "start_angle: %d", config->start_angle);
+  }
 
   if (!node->has_parameter("max_num_points_scan"))
   {
-    node->declare_parameter("max_num_points_scan", max_num_points_scan);
+    node->declare_parameter("max_num_points_scan", rclcpp::PARAMETER_INTEGER);
   }
-  node->get_parameter("max_num_points_scan", max_num_points_scan);
-  RCLCPP_INFO(node->get_logger(), "max_num_points_scan: %d", max_num_points_scan);
+  if (node->get_parameter("max_num_points_scan", tmp_param))
+  {
+    config->max_num_points_scan = tmp_param.as_int();
+    config->max_num_points_scan_set = true;
+    RCLCPP_INFO(node->get_logger(), "max_num_points_scan: %d", config->max_num_points_scan);
+  }
 
   if (!node->has_parameter("watchdogtimeout"))
   {
-    node->declare_parameter("watchdogtimeout", watchdogtimeout);
+    node->declare_parameter("watchdogtimeout", rclcpp::PARAMETER_INTEGER);
   }
-  node->get_parameter("watchdogtimeout", watchdogtimeout);
-  RCLCPP_INFO(node->get_logger(), "watchdogtimeout: %d", watchdogtimeout);
+  if (node->get_parameter("watchdogtimeout", tmp_param))
+  {
+    config->watchdogtimeout = tmp_param.as_int();
+    config->watchdogtimeout_set = true;
+    RCLCPP_INFO(node->get_logger(), "watchdogtimeout: %d", config->watchdogtimeout);
+  }
 
   if (!node->has_parameter("watchdog"))
   {
-    node->declare_parameter("watchdog", watchdog);
+    node->declare_parameter("watchdog", rclcpp::PARAMETER_BOOL);
   }
-  node->get_parameter("watchdog", watchdog);
-  RCLCPP_INFO(node->get_logger(), "watchdog: %d", watchdog);
+  if (node->get_parameter("watchdog", tmp_param))
+  {
+    config->watchdog = tmp_param.as_bool();
+    config->watchdog_set = true;
+    RCLCPP_INFO(node->get_logger(), "watchdog: %s", config->watchdog ? "on" : "off");
+  }
 
   if (!node->has_parameter("num_layers"))
   {
@@ -101,10 +121,14 @@ int main(int argc, char* argv[])
 
   if (!node->has_parameter("packet_type"))
   {
-    node->declare_parameter("packet_type", packet_type);
+    node->declare_parameter("packet_type", rclcpp::PARAMETER_STRING);
   }
-  node->get_parameter("packet_type", packet_type);
-  RCLCPP_INFO(node->get_logger(), "packet_type: %s", packet_type.c_str());
+  if (node->get_parameter("packet_type", tmp_param))
+  {
+    config->packet_type = tmp_param.as_string();
+    config->packet_type_set = true;
+    RCLCPP_INFO(node->get_logger(), "packet_type: %s", config->packet_type.c_str());
+  }
 
   if (!node->has_parameter("apply_correction"))
   {
@@ -115,10 +139,14 @@ int main(int argc, char* argv[])
 
   if (!node->has_parameter("skip_scans"))
   {
-    node->declare_parameter("skip_scans", skip_scans);
+    node->declare_parameter("skip_scans", rclcpp::PARAMETER_INTEGER);
   }
-  node->get_parameter("skip_scans", skip_scans);
-  RCLCPP_INFO(node->get_logger(), "skip_scans: %d", skip_scans);
+  if (node->get_parameter("skip_scans", tmp_param))
+  {
+    config->skip_scans = tmp_param.as_int();
+    config->skip_scans_set = true;
+    RCLCPP_INFO(node->get_logger(), "skip_scans: %d", config->skip_scans);
+  }
 
   if (!node->has_parameter("pfsdp_init"))
   {
@@ -137,15 +165,6 @@ int main(int argc, char* argv[])
 
   info->hostname = node->get_parameter("scanner_ip").get_parameter_value().get<std::string>();
   info->port = node->get_parameter("port").get_parameter_value().get<std::string>();
-
-  std::shared_ptr<ScanConfig> config = std::make_shared<ScanConfig>();
-  config->start_angle = node->get_parameter("start_angle").get_parameter_value().get<int>();
-  config->max_num_points_scan = node->get_parameter("max_num_points_scan").get_parameter_value().get<int>();
-  config->skip_scans = node->get_parameter("skip_scans").get_parameter_value().get<int>();
-  config->packet_type = node->get_parameter("packet_type").get_parameter_value().get<std::string>();
-  config->watchdogtimeout = node->get_parameter("watchdogtimeout").get_parameter_value().get<int>();
-  config->watchdog = node->get_parameter("watchdog").get_parameter_value().get<bool>();
-  RCLCPP_INFO(node->get_logger(), "start_angle: %d", config->start_angle);
 
   std::shared_ptr<ScanParameters> params = std::make_shared<ScanParameters>();
   params->apply_correction = node->get_parameter("apply_correction").get_parameter_value().get<bool>();
