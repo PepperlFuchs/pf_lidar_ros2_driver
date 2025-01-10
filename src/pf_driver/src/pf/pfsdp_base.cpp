@@ -269,9 +269,6 @@ void PFSDPBase::request_handle_tcp()
 
   info_->handle = resp["handle"];
   info_->port = resp["port"];
-
-  /* Update ScanConfig */
-  get_scanoutput_config(info_->handle);
 }
 
 void PFSDPBase::request_handle_udp()
@@ -283,9 +280,6 @@ void PFSDPBase::request_handle_udp()
   }
   auto resp = get_request("request_handle_udp", { "handle", "port" }, query);
   info_->handle = resp["handle"];
-
-  /* Update ScanConfig */
-  get_scanoutput_config(info_->handle);
 }
 
 void PFSDPBase::get_scanoutput_config(const std::string& handle)
@@ -304,30 +298,31 @@ void PFSDPBase::get_scanoutput_config(const std::string& handle)
 
 bool PFSDPBase::update_scanoutput_config()
 {
-  param_map_type query;
+  param_map_type query = { KV("handle", info_->handle) };
+
   if (config_->start_angle_set)
   {
-    query["start_angle"] = config_->start_angle;
+    query.insert(KV("start_angle", config_->start_angle));
   }
   if (config_->packet_type_set)
   {
-    query["packet_type"] = config_->packet_type;
+    query.insert(KV("packet_type", config_->packet_type));
   }
   if (config_->max_num_points_scan_set)
   {
-    query["max_num_points_scan"] = config_->max_num_points_scan;
+    query.insert(KV("max_num_points_scan", config_->max_num_points_scan));
   }
   if (config_->skip_scans_set)
   {
-    query["skip_scans"] = config_->skip_scans;
+    query.insert(KV("skip_scans", config_->skip_scans));
   }
   if (config_->watchdogtimeout_set)
   {
-    query["watchdogtimeout"] = config_->watchdogtimeout;
+    query.insert(KV("watchdogtimeout", config_->watchdogtimeout));
   }
   if (config_->watchdog_set)
   {
-    query["watchdog"] = config_->watchdog ? "on" : "off";
+    query.insert(KV("watchdogtimeout", config_->watchdog ? "on" : "off"));
   }
 
   auto resp = get_request("set_scanoutput_config", { "" }, query);
