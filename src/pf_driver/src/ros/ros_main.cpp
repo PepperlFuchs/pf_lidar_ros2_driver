@@ -15,9 +15,9 @@ int main(int argc, char* argv[])
   auto node = std::make_shared<rclcpp::Node>("pf_driver");
 
   std::vector<std::string> pfsdp_init;
-  std::string device, transport_str, scanner_ip, port, topic, frame_id, packet_type;
+  std::string device, transport_str, scanner_ip, topic, frame_id, packet_type;
   int samples_per_scan, start_angle, max_num_points_scan, watchdogtimeout, skip_scans, num_layers;
-  port = "0";
+  int port = 0;
   num_layers = 0;
   skip_scans = 0;
   bool watchdog, apply_correction = 0;
@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
     node->declare_parameter("port", port);
   }
   node->get_parameter("port", port);
-  RCLCPP_INFO(node->get_logger(), "port: %s", port.c_str());
+  RCLCPP_INFO(node->get_logger(), "port: %d", port);
 
   if (!node->has_parameter("start_angle"))
   {
@@ -134,11 +134,12 @@ int main(int argc, char* argv[])
   std::shared_ptr<HandleInfo> info = std::make_shared<HandleInfo>();
 
   info->handle_type = transport_str == "udp" ? HandleInfo::HANDLE_TYPE_UDP : HandleInfo::HANDLE_TYPE_TCP;
-
   info->hostname = node->get_parameter("scanner_ip").get_parameter_value().get<std::string>();
-  info->port = node->get_parameter("port").get_parameter_value().get<std::string>();
+  info->actual_port = -1;
 
   std::shared_ptr<ScanConfig> config = std::make_shared<ScanConfig>();
+
+  config->port = node->get_parameter("port").get_parameter_value().get<int>();
   config->start_angle = node->get_parameter("start_angle").get_parameter_value().get<int>();
   config->max_num_points_scan = node->get_parameter("max_num_points_scan").get_parameter_value().get<int>();
   config->skip_scans = node->get_parameter("skip_scans").get_parameter_value().get<int>();
