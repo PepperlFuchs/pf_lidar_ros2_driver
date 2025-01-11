@@ -5,22 +5,11 @@
 struct ScanConfig
 {
   bool watchdog = false;
-  bool watchdog_set = false;
-
   uint watchdogtimeout = 0;
-  bool watchdogtimeout_set = false;
-
   std::string packet_type = "";
-  bool packet_type_set = false;
-
   int start_angle = 0;
-  bool start_angle_set = false;
-
   uint max_num_points_scan = 0;
-  bool max_num_points_scan_set = false;
-
   uint skip_scans = 0;
-  bool skip_scans_set = false;
 
   // void print()
   // {

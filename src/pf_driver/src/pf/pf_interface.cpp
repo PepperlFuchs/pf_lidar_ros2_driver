@@ -113,7 +113,7 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
 
   prev_handle_ = info_->handle;
 
-  /* Configure sensor from ScanConfig (only user-set options) */
+  /* Configure sensor from ScanConfig (only explicitly set options) */
   protocol_interface_->update_scanoutput_config();
 
   /* Update our ScanConfig from sensor (all options) */

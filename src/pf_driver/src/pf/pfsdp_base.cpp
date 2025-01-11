@@ -257,7 +257,7 @@ std::string PFSDPBase::get_parameter_str(const std::string& param)
 void PFSDPBase::request_handle_tcp()
 {
   param_map_type query;
-  if (config_->packet_type_set)
+  if (!config_->packet_type.empty())
   {
     query["packet_type"] = config_->packet_type;
   }
@@ -274,7 +274,7 @@ void PFSDPBase::request_handle_tcp()
 void PFSDPBase::request_handle_udp()
 {
   param_map_type query = { KV("address", info_->endpoint), KV("port", info_->port) };
-  if (config_->packet_type_set)
+  if (!config_->packet_type.empty())
   {
     query["packet_type"] = config_->packet_type;
   }
@@ -300,29 +300,21 @@ bool PFSDPBase::update_scanoutput_config()
 {
   param_map_type query = { KV("handle", info_->handle) };
 
-  if (config_->start_angle_set)
-  {
-    query.insert(KV("start_angle", config_->start_angle));
-  }
-  if (config_->packet_type_set)
+  query.insert(KV("start_angle", config_->start_angle));
+  if (!config_->packet_type.empty())
   {
     query.insert(KV("packet_type", config_->packet_type));
   }
-  if (config_->max_num_points_scan_set)
-  {
-    query.insert(KV("max_num_points_scan", config_->max_num_points_scan));
-  }
-  if (config_->skip_scans_set)
-  {
-    query.insert(KV("skip_scans", config_->skip_scans));
-  }
-  if (config_->watchdogtimeout_set)
+  query.insert(KV("max_num_points_scan", config_->max_num_points_scan));
+  query.insert(KV("skip_scans", config_->skip_scans));
+  if (config_->watchdogtimeout != 0)
   {
     query.insert(KV("watchdogtimeout", config_->watchdogtimeout));
   }
-  if (config_->watchdog_set)
+  if (config_->watchdog == false)
   {
-    query.insert(KV("watchdogtimeout", config_->watchdog ? "on" : "off"));
+    /* Force watchdog off. Otherwise (if watchdog==true), use scanner default */
+    query.insert(KV("watchdog", "off"));
   }
 
   auto resp = get_request("set_scanoutput_config", { "" }, query);
@@ -414,27 +406,22 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     else if (parameter.get_name() == "watchdog")
     {
       config_->watchdog = parameter.as_bool();
-      config_->watchdog_set = true;
     }
     else if (parameter.get_name() == "watchdogtimeout")
     {
       config_->watchdogtimeout = parameter.as_int();
-      config_->watchdogtimeout_set = true;
     }
     else if (parameter.get_name() == "start_angle")
     {
       config_->start_angle = parameter.as_int();
-      config_->start_angle_set = true;
     }
     else if (parameter.get_name() == "max_num_points_scan")
     {
       config_->max_num_points_scan = parameter.as_int();
-      config_->max_num_points_scan_set = true;
     }
     else if (parameter.get_name() == "skip_scans")
     {
       config_->skip_scans = parameter.as_int();
-      config_->skip_scans_set = true;
     }
   }
 
