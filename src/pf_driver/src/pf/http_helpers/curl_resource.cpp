@@ -22,7 +22,7 @@ void CurlResource::append_query(const std::initializer_list<param_type>& list, b
   url_.pop_back();
 }
 
-void CurlResource::append_query(const param_map_type& params, bool do_encoding)
+void CurlResource::append_query(const param_vector_type& params, bool do_encoding)
 {
   url_ += "?";
   for (const auto& p : params)

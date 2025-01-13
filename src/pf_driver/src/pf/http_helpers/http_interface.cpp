@@ -15,7 +15,7 @@ const Json::Value HTTPInterface::get(const std::string& command, const std::init
   return get_(res);
 }
 
-const Json::Value HTTPInterface::get(const std::string& command, const param_map_type& params)
+const Json::Value HTTPInterface::get(const std::string& command, const param_vector_type& params)
 {
   CurlResource res(host);
   res.append_path(base_path);

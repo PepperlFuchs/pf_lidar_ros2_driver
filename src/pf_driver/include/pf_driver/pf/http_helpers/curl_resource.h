@@ -20,7 +20,7 @@
 #include <curlpp/Options.hpp>
 #include <json/json.h>
 
-#include "pf_driver/pf/http_helpers/param_map_type.h"
+#include "pf_driver/pf/http_helpers/param_vector_type.h"
 #include "pf_driver/pf/http_helpers/param_type.h"
 
 class CurlResource
@@ -32,7 +32,7 @@ public:
 
   void append_query(const std::initializer_list<param_type>& list, bool do_encoding = false);
 
-  void append_query(const param_map_type& params, bool do_encoding = false);
+  void append_query(const param_vector_type& params, bool do_encoding = false);
 
   void get(Json::Value& json_resp);
 
