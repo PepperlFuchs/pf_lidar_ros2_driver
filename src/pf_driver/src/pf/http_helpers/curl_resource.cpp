@@ -1,4 +1,5 @@
 #include "pf_driver/pf/http_helpers/curl_resource.h"
+#include <curlpp/Infos.hpp>
 
 CurlResource::CurlResource(const std::string& host) : url_("http://" + host)
 {
@@ -37,8 +38,19 @@ void CurlResource::get(Json::Value& json_resp)
   request_.setOpt(curlpp::options::Url(url_));
   request_.perform();
 
-  Json::Reader reader;
-  reader.parse(response_, json_resp);
+  long code = curlpp::infos::ResponseCode::get(request_);
+  if (code == 200)
+  {
+    Json::Reader reader;
+    reader.parse(response_, json_resp);
+  }
+  else
+  {
+    json_resp.clear();
+    /* Negate to make HTTP error code distinguishable from PFSDP error codes */
+    json_resp["error_code"] = Json::Value(- code);
+    json_resp["error_text"] = Json::Value("HTTP Server Error");
+  }
 }
 
 void CurlResource::print()
