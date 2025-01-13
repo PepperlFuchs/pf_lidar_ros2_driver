@@ -48,7 +48,7 @@ void CurlResource::get(Json::Value& json_resp)
   {
     json_resp.clear();
     /* Negate to make HTTP error code distinguishable from PFSDP error codes */
-    json_resp["error_code"] = Json::Value(-code);
+    json_resp["error_code"] = Json::Value((Json::Value::Int)-code);
     json_resp["error_text"] = Json::Value("HTTP Server Error");
   }
 }
