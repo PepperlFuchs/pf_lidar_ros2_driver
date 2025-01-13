@@ -7,8 +7,6 @@
 
 #include "pf_driver/pf/pf_interface.h"
 
-static volatile bool retrying = false;
-
 int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
@@ -173,6 +171,7 @@ int main(int argc, char* argv[])
   static std::shared_ptr<std::mutex> net_mtx_ = std::make_shared<std::mutex>();
   static std::shared_ptr<std::condition_variable> net_cv_ = std::make_shared<std::condition_variable>();
   static bool net_fail = false;
+  static bool interrupted = false;
 
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(node);
@@ -182,12 +181,10 @@ int main(int argc, char* argv[])
   // capture SIGINT (Ctr+C) to unblock the wait on conditional variable
   std::thread t2([] {
     std::signal(SIGINT, [](int /* signum */) {
-      std::cout << "received SIGINT" << std::endl;
       // notify main thread about network failure
       {
         std::lock_guard<std::mutex> lock(*net_mtx_);
-        retrying = false;
-        net_fail = true;
+        interrupted = true;
       }
       net_cv_->notify_one();
       pf_interface.stop_transmission();
@@ -202,7 +199,7 @@ int main(int argc, char* argv[])
       if (!pf_interface.init(info, config, params, topic, frame_id, num_layers))
       {
         RCLCPP_ERROR(node->get_logger(), "Unable to initialize device");
-        if (retrying)
+        if (!interrupted)
         {
           std::this_thread::sleep_for(std::chrono::milliseconds(2000));
           continue;
@@ -214,16 +211,24 @@ int main(int argc, char* argv[])
         RCLCPP_ERROR(node->get_logger(), "Unable to start scan");
         return -1;
       }
-      retrying = true;
       // wait for condition variable
-      std::unique_lock<std::mutex> net_lock(*net_mtx_);
-      net_cv_->wait(net_lock, [] { return net_fail; });
-      RCLCPP_ERROR(node->get_logger(), "Network failure");
+      {
+        std::unique_lock<std::mutex> net_lock(*net_mtx_);
+        net_cv_->wait(net_lock, [] { return net_fail or interrupted; });
+      }
+
+      if (net_fail)
+      {
+        RCLCPP_ERROR(node->get_logger(), "Network failure");
+      }
+      else if (interrupted)
+      {
+        RCLCPP_ERROR(node->get_logger(), "Interrupted");
+      }
       pf_interface.terminate();
-    } while (rclcpp::ok() && retrying);
+    } while (rclcpp::ok() && !interrupted);
   }
 
-  std::cout << "I am here" << std::endl;
   pf_interface.stop_transmission();
   rclcpp::shutdown();
   t.join();
