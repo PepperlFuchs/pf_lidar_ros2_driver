@@ -5,6 +5,7 @@
 #include <rclcpp/executors/multi_threaded_executor.hpp>
 #include <rclcpp/node.hpp>
 
+#include "pf_driver/pf/timesync.h"
 #include "pf_driver/pf/pf_interface.h"
 
 int main(int argc, char* argv[])
@@ -21,6 +22,7 @@ int main(int argc, char* argv[])
   bool watchdog, apply_correction = 0;
   int timesync_interval = 0; /* ms or 0(off) */
   int timesync_period = 0;   /* ms or 0(no averaging) */
+  bool timesync_regression = false; /* perform averaging(false) or linear regression(true) */
 
   if (!node->has_parameter("device"))
   {
@@ -92,6 +94,13 @@ int main(int argc, char* argv[])
   node->get_parameter("timesync_period", timesync_period);
   RCLCPP_INFO(node->get_logger(), "timesync_period: %d", timesync_period);
 
+  if (!node->has_parameter("timesync_regression"))
+  {
+    node->declare_parameter("timesync_regression", timesync_regression);
+  }
+  node->get_parameter("timesync_regression", timesync_regression);
+  RCLCPP_INFO(node->get_logger(), "timesync_regression: %s", timesync_regression ? "yes":"no");
+
   if (!node->has_parameter("num_layers"))
   {
     node->declare_parameter("num_layers", num_layers);
@@ -162,6 +171,7 @@ int main(int argc, char* argv[])
   RCLCPP_INFO(node->get_logger(), "start_angle: %d", config->start_angle);
   config->timesync_interval = node->get_parameter("timesync_interval").get_parameter_value().get<int>();
   config->timesync_period = node->get_parameter("timesync_period").get_parameter_value().get<int>();
+  config->timesync_regression = node->get_parameter("timesync_regression").get_parameter_value().get<bool>();
 
   std::shared_ptr<ScanParameters> params = std::make_shared<ScanParameters>();
   params->apply_correction = node->get_parameter("apply_correction").get_parameter_value().get<bool>();

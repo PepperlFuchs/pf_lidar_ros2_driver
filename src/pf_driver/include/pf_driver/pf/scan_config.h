@@ -12,6 +12,7 @@ struct ScanConfig
   uint skip_scans = 0;
   uint timesync_interval = 0;
   int timesync_period = 0;
+  bool timesync_regression = false;
 
   // void print()
   // {

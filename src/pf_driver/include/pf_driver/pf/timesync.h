@@ -27,6 +27,7 @@ private:
   double base_time_;
   double scale_time_;
   int period_;
+  bool linear_regression_;
   rclcpp::Time sensor_base_;
   rclcpp::Time pc_base_;
 
@@ -34,7 +35,7 @@ private:
 
 public:
   TimeSync();
-  void init(int period);
+  void init(int period, bool linear_regression);
   void reset(double since);
   void update(uint64_t sensor_time_raw, unsigned req_duration, rclcpp::Time pc_time);
   bool valid(void);

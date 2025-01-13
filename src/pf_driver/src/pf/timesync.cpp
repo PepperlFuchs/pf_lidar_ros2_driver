@@ -2,7 +2,8 @@
 #include <iomanip>
 #include "pf_driver/pf/timesync.h"
 
-TimeSync::TimeSync() : sensor_base_(0), pc_base_(0), base_time_(0), scale_time_(0)
+TimeSync::TimeSync()
+  : sensor_base_(0), pc_base_(0), base_time_(0), scale_time_(0), period_(0), linear_regression_(false)
 {
 }
 
@@ -18,10 +19,11 @@ void TimeSync::reset(double since)
   RCLCPP_INFO(rclcpp::get_logger("timesync"), "reset %f", since);
 }
 
-void TimeSync::init(int period)
+void TimeSync::init(int period, bool linear_regression)
 {
   reset(0.0);
   period_ = period;
+  linear_regression_ = linear_regression;
 }
 
 bool TimeSync::valid(void)
@@ -121,53 +123,56 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     double time_factor = 1.0;
     double base_time = 0.0;
 
-#if 0
-    /* Average */
-
-    base_time = 0.0;
-    for (auto it = samples_.begin(); it != samples_.end(); ++it)
+    if (linear_regression_)
     {
-      base_time += ((it->pc_time - pc_base) - (it->sensor_time - sensor_base)).seconds();
-    }
+      /* Linear regression */
 
-    /* Compute linearity error simply from periods between last and first timestamp pairs. */
-    if (samples_.size() > 1)
-    {
-      base_time /= (double)(samples_.size());
-
-      double pc_period = (samples_.back().pc_time - samples_.front().pc_time).seconds();
-      double sensor_period = (samples_.back().sensor_time - samples_.front().sensor_time).seconds();
-
-      if (pc_period > 0.0)
+      /* Compute sums */
+      double sum_x = 0, sum_xx = 0, sum_y = 0, sum_xy = 0;
+      for (auto it = samples_.begin(); it != samples_.end(); ++it)
       {
-        time_factor = pc_period / sensor_period;
+        double x = (it->sensor_time - sensor_base).seconds();
+        double y = (it->pc_time - pc_base).seconds();
+
+        sum_x += x;
+        sum_xx += x * x;
+        sum_y += y;
+        sum_xy += x * y;
+      }
+
+      /* Compute base and coefficent */
+      double n = (double)samples_.size();
+      double den = (n * sum_xx - sum_x * sum_x);
+      time_factor = (den == 0.0) ? 1.0 : ((n * sum_xy - sum_x * sum_y) / den);
+      base_time = (sum_y - time_factor * sum_x) / n;
+
+      RCLCPP_INFO(rclcpp::get_logger("timesync"), "regress: %f %f %f %f %f %f %f %f", sum_x, sum_xx, sum_y, sum_xy, den,
+                  time_factor, base_time, n);
+    }
+    else
+    {
+      /* Average */
+
+      base_time = 0.0;
+      for (auto it = samples_.begin(); it != samples_.end(); ++it)
+      {
+        base_time += ((it->pc_time - pc_base) - (it->sensor_time - sensor_base)).seconds();
+      }
+
+      /* Compute linearity error simply from periods between last and first timestamp pairs. */
+      if (samples_.size() > 1)
+      {
+        base_time /= (double)(samples_.size());
+
+        double pc_period = (samples_.back().pc_time - samples_.front().pc_time).seconds();
+        double sensor_period = (samples_.back().sensor_time - samples_.front().sensor_time).seconds();
+
+        if (pc_period > 0.0)
+        {
+          time_factor = pc_period / sensor_period;
+        }
       }
     }
-#else
-    /* Linear regression */
-
-    /* Compute sums */
-    double sum_x = 0, sum_xx = 0, sum_y = 0, sum_xy = 0;
-    for (auto it = samples_.begin(); it != samples_.end(); ++it)
-    {
-      double x = (it->sensor_time - sensor_base).seconds();
-      double y = (it->pc_time - pc_base).seconds();
-
-      sum_x += x;
-      sum_xx += x * x;
-      sum_y += y;
-      sum_xy += x * y;
-    }
-
-    /* Compute base and coefficent */
-    double n = (double)samples_.size();
-    double den = (n * sum_xx - sum_x * sum_x);
-    time_factor = (den == 0.0) ? 1.0 : ((n * sum_xy - sum_x * sum_y) / den);
-    base_time = (sum_y - time_factor * sum_x) / n;
-
-    RCLCPP_INFO(rclcpp::get_logger("timesync"), "regress: %f %f %f %f %f %f %f %f", sum_x, sum_xx, sum_y, sum_xy, den,
-                time_factor, base_time, n);
-#endif
 
     /* Update state, protected by access_ mutex */
     {

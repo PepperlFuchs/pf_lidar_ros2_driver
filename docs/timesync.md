@@ -19,7 +19,7 @@ At that time of evaluation, an unknown duration has passed since physical recept
 
 Several delays have to be taken into account:
 
- - the timestamp in the packet describes the time when the first included measurement 
+ - the timestamp in the packet describes the time when the first included measurement
     was made. Since then, `num_points_packet` further measurements took place at the
     current sample rate, until the packet was constructed and passed to the
     network driver at the sensor.
@@ -103,7 +103,12 @@ from R2000).
 Set node parameter `timesync_interval` to some non-zero milliseconds value if
 extra HTTP requests for sensor time shall be made. The node will perform those
 request regularly each time the interval passed. Otherwise, the packet
-evaluation time is used to determine the timestamp relation. 
+evaluation time is used to determine the timestamp relation.
+
+The parameter `timesync_period` determines the period of time over which data
+is kept for averaging and `timesync_regression` may be set to `true` if 
+linear regression is preferred over simple averaging for computing the PC
+time from sensor time.
 
 The recorded data is reset whenever scan parameters such as frequency and
 angular resolution are changed. Immediately after such changes, the ROS
