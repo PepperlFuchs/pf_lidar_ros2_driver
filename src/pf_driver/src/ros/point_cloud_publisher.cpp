@@ -182,20 +182,19 @@ void PointcloudPublisher::project_laser(sensor_msgs::msg::PointCloud2& c, sensor
   {
     // num of points in cloud is sometimes less than that in laser scan because of
     // https://github.com/ros-perception/laser_geometry/blob/indigo-devel/src/laser_geometry.cpp#L110
-    if (msg->ranges[i] < msg->range_min || msg->ranges[i] >= msg->range_max)
+    if (msg->ranges[i] < msg->range_max && msg->ranges[i] >= msg->range_min)
     {
-      continue;
+      double angle_h = msg->angle_min + msg->angle_increment * (double)i;
+
+      angle_v = correction_params_[layer_inclination][0] * angle_h * angle_h +
+                correction_params_[layer_inclination][1] * angle_h + correction_params_[layer_inclination][2];
+
+      p_cloud->points[cl_idx].x = cos(angle_h) * cos(angle_v) * msg->ranges[i];
+      p_cloud->points[cl_idx].y = sin(angle_h) * cos(angle_v) * msg->ranges[i];
+      p_cloud->points[cl_idx].z = sin(angle_v) * msg->ranges[i];
+
+      cl_idx++;
     }
-    double angle_h = msg->angle_min + msg->angle_increment * (double)i;
-
-    angle_v = correction_params_[layer_inclination][0] * angle_h * angle_h +
-              correction_params_[layer_inclination][1] * angle_h + correction_params_[layer_inclination][2];
-
-    p_cloud->points[cl_idx].x = cos(angle_h) * cos(angle_v) * msg->ranges[i];
-    p_cloud->points[cl_idx].y = sin(angle_h) * cos(angle_v) * msg->ranges[i];
-    p_cloud->points[cl_idx].z = sin(angle_v) * msg->ranges[i];
-
-    cl_idx++;
   }
 
   pcl::toROSMsg(*p_cloud.get(), c);
