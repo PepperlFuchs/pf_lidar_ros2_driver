@@ -38,6 +38,6 @@ public:
   void reset(double since);
   void update(uint64_t sensor_time_raw, unsigned req_duration, rclcpp::Time pc_time);
   bool valid(void);
-  void raw_to_rclcpp(uint64_t raw, rclcpp::Time& cppt);
+  void raw_to_rclcpp(uint64_t raw, rclcpp::Time& cppt, rcl_clock_type_t clock_type);
   void sensor_to_pc(uint64_t raw, rclcpp::Time& cppt);
 };

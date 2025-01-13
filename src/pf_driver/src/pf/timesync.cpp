@@ -29,17 +29,18 @@ bool TimeSync::valid(void)
   return (samples_.size() > 0);
 }
 
-void TimeSync::raw_to_rclcpp(uint64_t raw, rclcpp::Time& cppt)
+void TimeSync::raw_to_rclcpp(uint64_t raw, rclcpp::Time& cppt, rcl_clock_type_t clock_type)
 {
   int32_t s = (int32_t)((raw >> 32) & 0x7ffffffful);
   uint32_t ns = ((uint64_t)(raw & 0xfffffffful) * 1000000000ull) >> 32;
-  cppt = rclcpp::Time(s, ns, RCL_STEADY_TIME);
+
+  cppt = rclcpp::Time(s, ns, clock_type);
 }
 
 void TimeSync::sensor_to_pc(uint64_t sensor_time_raw, rclcpp::Time& pc_time)
 {
   rclcpp::Time sensor_time;
-  raw_to_rclcpp(sensor_time_raw, sensor_time);
+  raw_to_rclcpp(sensor_time_raw, sensor_time, pc_base_.get_clock_type());
 
   {
     std::lock_guard<std::mutex> guard(access_);
@@ -67,7 +68,7 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
   }
 
   {
-    raw_to_rclcpp(sensor_time_raw, sample.sensor_time);
+    raw_to_rclcpp(sensor_time_raw, sample.sensor_time, pc_time.get_clock_type());
 
     if (samples_.size() > 0)
     {

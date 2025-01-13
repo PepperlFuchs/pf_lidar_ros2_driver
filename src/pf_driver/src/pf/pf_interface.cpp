@@ -233,31 +233,17 @@ void PFInterface::start_timesync_timer(unsigned interval)
 
 void PFInterface::update_timesync(void)
 {
-#if 1
-  rclcpp::Time start(rclcpp::Clock().now());
-  auto resp = protocol_interface_->get_parameter("system_time_raw");
-  rclcpp::Time end(rclcpp::Clock().now());
-  const uint64_t sensor_time = stoull(resp["system_time_raw"]);
-  if (end >= start) /* shouldn't we use RCL_STEADY_TIME? */
-  {
-    params_->active_timesync.update(sensor_time, (end - start).nanoseconds() / 1000, start);
-  }
-#else
-  const std::string system_time_raw_name("system_time_raw");
-  std::string system_time_raw_value;
-  std::string error_text;
-  int32_t error_code = -1;
-  rclcpp::Time start(rclcpp::Clock(RCL_STEADY_TIME).now());
-  protocol_interface_->get_parameter("get_parameter", system_time_raw_name, system_time_raw_value, error_code,
-                                     error_text);
-  if (error_code == 0)
-  {
-    rclcpp::Time end(rclcpp::Clock(RCL_STEADY_TIME).now());
-    const uint64_t sensor_time = stoull(system_time_raw_value);
+  rclcpp::Clock steady_clock(RCL_STEADY_TIME);
 
-    params_->active_timesync.update(sensor_time, (end - start).nanoseconds() / 1000, start);
-  }
-#endif
+  rclcpp::Time when(rclcpp::Clock().now());
+  rclcpp::Time start(steady_clock.now());
+
+  auto resp = protocol_interface_->get_parameter("system_time_raw");
+
+  rclcpp::Time end(steady_clock.now());
+
+  const uint64_t sensor_time = stoull(resp["system_time_raw"]);
+  params_->active_timesync.update(sensor_time, (end - start).nanoseconds() / 1000, when);
 }
 
 void PFInterface::on_shutdown()
