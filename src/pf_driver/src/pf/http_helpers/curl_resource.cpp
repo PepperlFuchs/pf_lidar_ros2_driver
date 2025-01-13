@@ -17,7 +17,7 @@ void CurlResource::append_query(const std::initializer_list<param_type>& list, b
   url_ += "?";
   for (const auto& p : list)
   {
-    url_ += p.first + "=" + p.second + "&";
+    url_ += p.first + "=" + curlpp::escape(p.second) + "&";
   }
   url_.pop_back();
 }
@@ -27,7 +27,7 @@ void CurlResource::append_query(const param_map_type& params, bool do_encoding)
   url_ += "?";
   for (const auto& p : params)
   {
-    url_ += p.first + "=" + p.second + "&";
+    url_ += p.first + "=" + curlpp::escape(p.second) + "&";
   }
   url_.pop_back();
 }
