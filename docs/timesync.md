@@ -110,9 +110,12 @@ is kept for averaging and `timesync_regression` may be set to `true` if
 linear regression is preferred over simple averaging for computing the PC
 time from sensor time.
 
+### Caveats
+
 The recorded data is reset whenever scan parameters such as frequency and
 angular resolution are changed. Immediately after such changes, the ROS
 timestamps in scan data should be taken with care, while conversion coefficient
 and offset are still settling.
 
-
+The current implementation is not prepared for jumps in ROS time. It probably
+should attach a Clock callback to reset the recorded data in such situations.
