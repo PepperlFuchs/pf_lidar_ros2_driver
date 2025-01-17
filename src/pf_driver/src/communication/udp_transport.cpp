@@ -9,10 +9,10 @@ using boost::asio::ip::udp;
 
 auto udp_logger = rclcpp::get_logger("transport");
 
-UDPTransport::UDPTransport(std::string address, std::string port) : Transport(address, transport_type::udp)
+UDPTransport::UDPTransport(std::string address, int port) : Transport(address, transport_type::udp)
 {
   io_service_ = std::make_shared<boost::asio::io_service>();
-  udp::endpoint local_endpoint = udp::endpoint(boost::asio::ip::address_v4::from_string("0.0.0.0"), stoi(port));
+  udp::endpoint local_endpoint = udp::endpoint(boost::asio::ip::address_v4::from_string("0.0.0.0"), port);
 
   socket_ = std::make_unique<udp::socket>(*io_service_, local_endpoint);
   timer_ = std::make_shared<boost::asio::deadline_timer>(*io_service_.get());
@@ -27,7 +27,7 @@ bool UDPTransport::connect()
 {
   udp::endpoint udp_endpoint = udp::endpoint(boost::asio::ip::address::from_string(address_), 0);
   socket_->connect(udp_endpoint);
-  port_ = std::to_string(socket_->local_endpoint().port());
+  port_ = socket_->local_endpoint().port();
   host_ip_ = socket_->local_endpoint().address().to_string();
 
   is_connected_ = true;

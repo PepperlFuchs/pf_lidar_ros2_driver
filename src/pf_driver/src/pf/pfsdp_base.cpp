@@ -254,7 +254,7 @@ std::string PFSDPBase::get_parameter_str(const std::string& param)
   return resp[param];
 }
 
-void PFSDPBase::request_handle_tcp(const std::string& port, const std::string& packet_type)
+void PFSDPBase::request_handle_tcp(int port, const std::string& packet_type)
 {
   param_map_type query;
   if (!packet_type.empty())
@@ -265,25 +265,21 @@ void PFSDPBase::request_handle_tcp(const std::string& port, const std::string& p
   {
     query["packet_type"] = config_->packet_type;
   }
-  if (!port.empty())
+  if (port != 0)
   {
-    query["port"] = port;
-  }
-  else if (info_->port.compare("0") != 0)
-  {
-    query["port"] = info_->port;
+    query.insert(KV("port", port));
   }
   auto resp = get_request("request_handle_tcp", { "handle", "port" }, query);
 
   info_->handle = resp["handle"];
-  info_->port = resp["port"];
+  info_->actual_port = parser_utils::to_long(resp["port"]);
 
   // TODO: port and pkt_type should be updated in config_
 }
 
 void PFSDPBase::request_handle_udp(const std::string& packet_type)
 {
-  param_map_type query = { KV("address", info_->endpoint), KV("port", info_->port) };
+  param_map_type query = { KV("address", info_->endpoint), KV("port", info_->actual_port) };
   if (!packet_type.empty())
   {
     query["packet_type"] = packet_type;
@@ -417,7 +413,7 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     }
     else if (parameter.get_name() == "port")
     {
-      info_->port = parameter.value_to_string();
+      config_->port = parameter.as_int();
     }
     else if (parameter.get_name() == "transport")
     {

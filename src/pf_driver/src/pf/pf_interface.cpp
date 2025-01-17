@@ -75,7 +75,7 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
 
   if (info->handle_type == HandleInfo::HANDLE_TYPE_UDP)
   {
-    transport_ = std::make_unique<UDPTransport>(info->hostname, info->port);
+    transport_ = std::make_unique<UDPTransport>(info->hostname, config->port);
     if (!transport_->connect())
     {
       RCLCPP_ERROR(node_->get_logger(), "Unable to establish UDP connection");
@@ -83,16 +83,16 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
     }
 
     info->endpoint = transport_->get_host_ip();
-    info->port = transport_->get_port();
+    info->actual_port = transport_->get_port();
     protocol_interface_->request_handle_udp();
   }
   else if (info->handle_type == HandleInfo::HANDLE_TYPE_TCP)
   {
     transport_ = std::make_unique<TCPTransport>(info->hostname);
-    protocol_interface_->request_handle_tcp();
+    protocol_interface_->request_handle_tcp(config->port);
     // if initially port was not set, request_handle sets it
     // set the updated port in transport
-    transport_->set_port(info_->port);
+    transport_->set_port(info->actual_port);
     if (!transport_->connect())
     {
       RCLCPP_ERROR(node_->get_logger(), "Unable to establish TCP connection");
