@@ -259,7 +259,7 @@ void PFSDPBase::request_handle_tcp(int port)
   param_vector_type query;
   if (!config_->packet_type.empty())
   {
-    query.push_back(KV("packet_type", packet_type));
+    query.push_back(KV("packet_type", config_->packet_type));
   }
   if (port != 0)
   {
@@ -271,7 +271,7 @@ void PFSDPBase::request_handle_tcp(int port)
   info_->actual_port = parser_utils::to_long(resp["port"]);
 }
 
-void PFSDPBase::request_handle_udp(const std::string& packet_type)
+void PFSDPBase::request_handle_udp()
 {
   param_vector_type query = { KV("address", info_->endpoint), KV("port", info_->actual_port) };
   if (!config_->packet_type.empty())

@@ -16,6 +16,7 @@ int main(int argc, char* argv[])
   std::string device;
   std::string transport_str;
   std::string scanner_ip;
+  int port = 0; /* 0 means: automatic */
   std::string topic("/scan");
   std::string frame_id("scanner_link");
   std::string packet_type; /* empty means: use scanner default */
