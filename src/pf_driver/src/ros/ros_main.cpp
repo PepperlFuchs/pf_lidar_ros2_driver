@@ -16,7 +16,6 @@ int main(int argc, char* argv[])
   std::string device;
   std::string transport_str;
   std::string scanner_ip;
-  std::string port("0"); /* 0 means: automatic */
   std::string topic("/scan");
   std::string frame_id("scanner_link");
   std::string packet_type; /* empty means: use scanner default */
@@ -55,7 +54,7 @@ int main(int argc, char* argv[])
     node->declare_parameter("port", port);
   }
   node->get_parameter("port", port);
-  RCLCPP_INFO(node->get_logger(), "port: %s", port.c_str());
+  RCLCPP_INFO(node->get_logger(), "port: %d", port);
 
   if (!node->has_parameter("start_angle"))
   {
@@ -143,9 +142,11 @@ int main(int argc, char* argv[])
   info->handle_type = transport_str == "udp" ? HandleInfo::HANDLE_TYPE_UDP : HandleInfo::HANDLE_TYPE_TCP;
 
   info->hostname = node->get_parameter("scanner_ip").get_parameter_value().get<std::string>();
-  info->port = node->get_parameter("port").get_parameter_value().get<std::string>();
+  info->actual_port = -1;
 
   std::shared_ptr<ScanConfig> config = std::make_shared<ScanConfig>();
+
+  config->port = node->get_parameter("port").get_parameter_value().get<int>();
   config->start_angle = node->get_parameter("start_angle").get_parameter_value().get<int>();
   config->max_num_points_scan = node->get_parameter("max_num_points_scan").get_parameter_value().get<int>();
   config->skip_scans = node->get_parameter("skip_scans").get_parameter_value().get<int>();

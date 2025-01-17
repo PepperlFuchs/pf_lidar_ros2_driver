@@ -62,12 +62,12 @@ const std::map<std::string, std::string> PFSDPBase::get_request(const std::strin
                                                                 const std::vector<std::string>& json_keys,
                                                                 const std::initializer_list<param_type>& query)
 {
-  return get_request(command, json_keys, param_map_type(query.begin(), query.end()));
+  return get_request(command, json_keys, param_vector_type(query.begin(), query.end()));
 }
 
 const std::map<std::string, std::string> PFSDPBase::get_request(const std::string& command,
                                                                 const std::vector<std::string>& json_keys,
-                                                                const param_map_type& query)
+                                                                const param_vector_type& query)
 {
   Json::Value json_resp = http_interface->get(command, query);
 
@@ -254,29 +254,29 @@ std::string PFSDPBase::get_parameter_str(const std::string& param)
   return resp[param];
 }
 
-void PFSDPBase::request_handle_tcp()
+void PFSDPBase::request_handle_tcp(int port)
 {
-  param_map_type query;
+  param_vector_type query;
   if (!config_->packet_type.empty())
   {
-    query["packet_type"] = config_->packet_type;
+    query.push_back(KV("packet_type", packet_type));
   }
-  if (info_->port.compare("0") != 0)
+  if (port != 0)
   {
-    query["port"] = info_->port;
+    query.push_back(KV("port", port));
   }
   auto resp = get_request("request_handle_tcp", { "handle", "port" }, query);
 
   info_->handle = resp["handle"];
-  info_->port = resp["port"];
+  info_->actual_port = parser_utils::to_long(resp["port"]);
 }
 
-void PFSDPBase::request_handle_udp()
+void PFSDPBase::request_handle_udp(const std::string& packet_type)
 {
-  param_map_type query = { KV("address", info_->endpoint), KV("port", info_->port) };
+  param_vector_type query = { KV("address", info_->endpoint), KV("port", info_->actual_port) };
   if (!config_->packet_type.empty())
   {
-    query["packet_type"] = config_->packet_type;
+    query.push_back(KV("packet_type", config_->packet_type));
   }
   auto resp = get_request("request_handle_udp", { "handle", "port" }, query);
   info_->handle = resp["handle"];
@@ -298,23 +298,23 @@ void PFSDPBase::get_scanoutput_config(const std::string& handle)
 
 bool PFSDPBase::update_scanoutput_config()
 {
-  param_map_type query = { KV("handle", info_->handle) };
+  param_vector_type query = { KV("handle", info_->handle) };
 
-  query.insert(KV("start_angle", config_->start_angle));
+  query.push_back(KV("start_angle", config_->start_angle));
   if (!config_->packet_type.empty())
   {
-    query.insert(KV("packet_type", config_->packet_type));
+    query.push_back(KV("packet_type", config_->packet_type));
   }
-  query.insert(KV("max_num_points_scan", config_->max_num_points_scan));
-  query.insert(KV("skip_scans", config_->skip_scans));
+  query.push_back(KV("max_num_points_scan", config_->max_num_points_scan));
+  query.push_back(KV("skip_scans", config_->skip_scans));
   if (config_->watchdogtimeout != 0)
   {
-    query.insert(KV("watchdogtimeout", config_->watchdogtimeout));
+    query.push_back(KV("watchdogtimeout", config_->watchdogtimeout));
   }
   if (config_->watchdog == false)
   {
     /* Force watchdog off. Otherwise (if watchdog==true), use scanner default */
-    query.insert(KV("watchdog", "off"));
+    query.push_back(KV("watchdog", "off"));
   }
 
   auto resp = get_request("set_scanoutput_config", { "" }, query);
@@ -395,7 +395,7 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     }
     else if (parameter.get_name() == "port")
     {
-      info_->port = parameter.value_to_string();
+      config_->port = parameter.as_int();
     }
     else if (parameter.get_name() == "transport")
     {

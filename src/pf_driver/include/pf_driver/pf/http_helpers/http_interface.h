@@ -17,7 +17,7 @@
 #include <json/json.h>
 
 #include "pf_driver/pf/http_helpers/param_type.h"
-#include "pf_driver/pf/http_helpers/param_map_type.h"
+#include "pf_driver/pf/http_helpers/param_vector_type.h"
 
 class CurlResource;
 
@@ -29,7 +29,7 @@ public:
   const Json::Value get(const std::string& command,
                         const std::initializer_list<param_type>& list = std::initializer_list<param_type>());
 
-  const Json::Value get(const std::string& command, const param_map_type& params = param_map_type());
+  const Json::Value get(const std::string& command, const param_vector_type& params = param_vector_type());
 
 private:
   const Json::Value get_(CurlResource& res);

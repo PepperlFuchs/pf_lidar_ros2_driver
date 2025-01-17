@@ -32,12 +32,12 @@ public:
   {
   }
 
-  void set_port(std::string port)
+  void set_port(int port)
   {
-    port_ = std::move(port);
+    port_ = port;
   }
 
-  std::string get_port()
+  int get_port()
   {
     return port_;
   }
@@ -65,7 +65,7 @@ public:
 protected:
   std::string address_;
   std::string host_ip_;
-  std::string port_;
+  int port_;
   bool is_connected_;
   transport_type type_;
   std::shared_ptr<boost::asio::io_service> io_service_;
