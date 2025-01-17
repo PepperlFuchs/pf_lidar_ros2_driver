@@ -100,15 +100,13 @@ public:
 
   std::string get_parameter_str(const std::string& param);
 
-  void request_handle_tcp(int port = 0, const std::string& packet_type = "");
+  void request_handle_tcp(int port = 0);
 
-  virtual void request_handle_udp(const std::string& packet_type = "");
+  virtual void request_handle_udp();
 
   bool release_handle(const std::string& handle);
 
   virtual void get_scanoutput_config(const std::string& handle);
-
-  bool set_scanoutput_config(const std::string& handle, const ScanConfig& config);
 
   bool update_scanoutput_config();
 

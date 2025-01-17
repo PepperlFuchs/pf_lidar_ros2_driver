@@ -13,12 +13,21 @@ int main(int argc, char* argv[])
   auto node = std::make_shared<rclcpp::Node>("pf_driver");
 
   std::vector<std::string> pfsdp_init;
-  std::string device, transport_str, scanner_ip, topic, frame_id, packet_type;
-  int samples_per_scan, start_angle, max_num_points_scan, watchdogtimeout, skip_scans, num_layers;
-  int port = 0;
-  num_layers = 0;
-  skip_scans = 0;
-  bool watchdog, apply_correction = 0;
+  std::string device;
+  std::string transport_str;
+  std::string scanner_ip;
+  int port = 0; /* 0 means: automatic */
+  std::string topic("/scan");
+  std::string frame_id("scanner_link");
+  std::string packet_type; /* empty means: use scanner default */
+  int samples_per_scan = 0;
+  int start_angle = -1800000;
+  int max_num_points_scan = 0;
+  int watchdogtimeout = 0; /* "0" means: use scanner default */
+  int skip_scans = 0;
+  int num_layers = 1;
+  bool watchdog = true; /* "true" means: use scanner default */
+  bool apply_correction = false;
 
   if (!node->has_parameter("device"))
   {
@@ -132,6 +141,7 @@ int main(int argc, char* argv[])
   std::shared_ptr<HandleInfo> info = std::make_shared<HandleInfo>();
 
   info->handle_type = transport_str == "udp" ? HandleInfo::HANDLE_TYPE_UDP : HandleInfo::HANDLE_TYPE_TCP;
+
   info->hostname = node->get_parameter("scanner_ip").get_parameter_value().get<std::string>();
   info->actual_port = -1;
 
