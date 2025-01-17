@@ -100,7 +100,7 @@ public:
 
   std::string get_parameter_str(const std::string& param);
 
-  void request_handle_tcp(const std::string& port = "", const std::string& packet_type = "");
+  void request_handle_tcp(int port = 0, const std::string& packet_type = "");
 
   virtual void request_handle_udp(const std::string& packet_type = "");
 
