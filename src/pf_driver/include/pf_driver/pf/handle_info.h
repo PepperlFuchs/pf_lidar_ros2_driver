@@ -9,7 +9,7 @@ struct HandleInfo
 
   int handle_type;
   std::string hostname;
-  std::string port;
+  int actual_port;
   std::string handle;
   std::string endpoint;
 };

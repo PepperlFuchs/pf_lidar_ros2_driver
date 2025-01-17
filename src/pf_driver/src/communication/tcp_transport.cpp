@@ -26,7 +26,7 @@ bool TCPTransport::connect()
   try
   {
     tcp::resolver resolver(*io_service_);
-    tcp::resolver::query query(address_, port_);
+    tcp::resolver::query query(address_, std::to_string(port_));
     tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
     tcp::resolver::iterator end;
 

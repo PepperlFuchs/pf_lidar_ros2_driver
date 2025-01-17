@@ -92,7 +92,7 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
 
   if (info->handle_type == HandleInfo::HANDLE_TYPE_UDP)
   {
-    transport_ = std::make_unique<UDPTransport>(info->hostname, info->port);
+    transport_ = std::make_unique<UDPTransport>(info->hostname, config->port);
     if (!transport_->connect())
     {
       RCLCPP_ERROR(node_->get_logger(), "Unable to establish UDP connection");
@@ -100,16 +100,16 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
     }
 
     info->endpoint = transport_->get_host_ip();
-    info->port = transport_->get_port();
+    info->actual_port = transport_->get_port();
     protocol_interface_->request_handle_udp();
   }
   else if (info->handle_type == HandleInfo::HANDLE_TYPE_TCP)
   {
     transport_ = std::make_unique<TCPTransport>(info->hostname);
-    protocol_interface_->request_handle_tcp();
+    protocol_interface_->request_handle_tcp(config->port);
     // if initially port was not set, request_handle sets it
     // set the updated port in transport
-    transport_->set_port(info_->port);
+    transport_->set_port(info->actual_port);
     if (!transport_->connect())
     {
       RCLCPP_ERROR(node_->get_logger(), "Unable to establish TCP connection");
@@ -129,8 +129,14 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
   }
 
   prev_handle_ = info_->handle;
-  protocol_interface_->setup_parameters_callback();
+
+  /* Configure sensor from ScanConfig (only explicitly set options) */
   protocol_interface_->update_scanoutput_config();
+
+  /* Update our ScanConfig from sensor (all options) */
+  protocol_interface_->get_scanoutput_config(info_->handle);
+
+  protocol_interface_->setup_parameters_callback();
   protocol_interface_->set_connection_failure_cb(std::bind(&PFInterface::connection_failure_cb, this));
   change_state(PFState::INIT);
   return true;
@@ -175,11 +181,14 @@ bool PFInterface::start_transmission(std::shared_ptr<std::mutex> net_mtx,
     return false;
 
   protocol_interface_->start_scanoutput();
-  // start watchdog timer is watchdog is true in config AND if the device is R2000
-  // since watchdog for R2300 is always off
-  if (config_->watchdog && protocol_interface_->get_product().find("R2000") != std::string::npos)
+  if (config_->watchdog)
   {
-    start_watchdog_timer(config_->watchdogtimeout / 1000.0);
+    double timeout_s = config_->watchdogtimeout / 1000.0;
+    if (timeout_s < 0.1)
+    {
+      timeout_s = 0.1;
+    }
+    start_watchdog_timer(timeout_s);
   }
   change_state(PFState::RUNNING);
   return true;
