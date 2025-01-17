@@ -428,7 +428,7 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     }
     else if (parameter.get_name() == "port")
     {
-      info_->port = parameter.value_to_string();
+      config_->port = parameter.as_int();
     }
     else if (parameter.get_name() == "transport")
     {
