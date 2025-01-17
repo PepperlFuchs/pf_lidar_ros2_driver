@@ -62,12 +62,12 @@ const std::map<std::string, std::string> PFSDPBase::get_request(const std::strin
                                                                 const std::vector<std::string>& json_keys,
                                                                 const std::initializer_list<param_type>& query)
 {
-  return get_request(command, json_keys, param_map_type(query.begin(), query.end()));
+  return get_request(command, json_keys, param_vector_type(query.begin(), query.end()));
 }
 
 const std::map<std::string, std::string> PFSDPBase::get_request(const std::string& command,
                                                                 const std::vector<std::string>& json_keys,
-                                                                const param_map_type& query)
+                                                                const param_vector_type& query)
 {
   Json::Value json_resp = http_interface->get(command, query);
 
@@ -256,18 +256,18 @@ std::string PFSDPBase::get_parameter_str(const std::string& param)
 
 void PFSDPBase::request_handle_tcp(int port, const std::string& packet_type)
 {
-  param_map_type query;
+  param_vector_type query;
   if (!packet_type.empty())
   {
-    query["packet_type"] = packet_type;
+    query.push_back(KV("packet_type", packet_type));
   }
   else
   {
-    query["packet_type"] = config_->packet_type;
+    query.push_back(KV("packet_type", config_->packet_type));
   }
   if (port != 0)
   {
-    query.insert(KV("port", port));
+    query.push_back(KV("port", port));
   }
   auto resp = get_request("request_handle_tcp", { "handle", "port" }, query);
 
@@ -279,14 +279,14 @@ void PFSDPBase::request_handle_tcp(int port, const std::string& packet_type)
 
 void PFSDPBase::request_handle_udp(const std::string& packet_type)
 {
-  param_map_type query = { KV("address", info_->endpoint), KV("port", info_->actual_port) };
+  param_vector_type query = { KV("address", info_->endpoint), KV("port", info_->actual_port) };
   if (!packet_type.empty())
   {
-    query["packet_type"] = packet_type;
+    query.push_back(KV("packet_type", packet_type));
   }
   else
   {
-    query["packet_type"] = config_->packet_type;
+    query.push_back(KV("packet_type", config_->packet_type));
   }
   auto resp = get_request("request_handle_udp", { "handle", "port" }, query);
   info_->handle = resp["handle"];
@@ -308,13 +308,13 @@ void PFSDPBase::get_scanoutput_config(const std::string& handle)
 
 bool PFSDPBase::set_scanoutput_config(const std::string& handle, const ScanConfig& config)
 {
-  param_map_type query = { KV("handle", handle),
-                           KV("start_angle", config.start_angle),
-                           KV("packet_type", config.packet_type),
-                           KV("max_num_points_scan", config.max_num_points_scan),
-                           KV("watchdogtimeout", config.watchdogtimeout),
-                           KV("skip_scans", config.skip_scans),
-                           KV("watchdog", config.watchdog ? "on" : "off") };
+  param_vector_type query = { KV("handle", handle),
+                              KV("start_angle", config.start_angle),
+                              KV("packet_type", config.packet_type),
+                              KV("max_num_points_scan", config.max_num_points_scan),
+                              KV("watchdogtimeout", config.watchdogtimeout),
+                              KV("skip_scans", config.skip_scans),
+                              KV("watchdog", config.watchdog ? "on" : "off") };
   auto resp = get_request("set_scanoutput_config", { "" }, query);
 
   // update global config_
@@ -325,13 +325,13 @@ bool PFSDPBase::set_scanoutput_config(const std::string& handle, const ScanConfi
 
 bool PFSDPBase::update_scanoutput_config()
 {
-  param_map_type query = { KV("handle", info_->handle),
-                           KV("start_angle", config_->start_angle),
-                           KV("packet_type", config_->packet_type),
-                           KV("max_num_points_scan", config_->max_num_points_scan),
-                           KV("watchdogtimeout", config_->watchdogtimeout),
-                           KV("skip_scans", config_->skip_scans),
-                           KV("watchdog", config_->watchdog ? "on" : "off") };
+  param_vector_type query = { KV("handle", info_->handle),
+                              KV("start_angle", config_->start_angle),
+                              KV("packet_type", config_->packet_type),
+                              KV("max_num_points_scan", config_->max_num_points_scan),
+                              KV("watchdogtimeout", config_->watchdogtimeout),
+                              KV("skip_scans", config_->skip_scans),
+                              KV("watchdog", config_->watchdog ? "on" : "off") };
   auto resp = get_request("set_scanoutput_config", { "" }, query);
 
   // recalculate scan params
