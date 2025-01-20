@@ -25,7 +25,6 @@ int main(int argc, char* argv[])
   int max_num_points_scan = 0;
   int watchdogtimeout = 0; /* "0" means: use scanner default */
   int skip_scans = 0;
-  int num_layers = 1;
   bool watchdog = true; /* "true" means: use scanner default */
   bool apply_correction = false;
 
@@ -84,13 +83,6 @@ int main(int argc, char* argv[])
   }
   node->get_parameter("watchdog", watchdog);
   RCLCPP_INFO(node->get_logger(), "watchdog: %d", watchdog);
-
-  if (!node->has_parameter("num_layers"))
-  {
-    node->declare_parameter("num_layers", num_layers);
-  }
-  node->get_parameter("num_layers", num_layers);
-  RCLCPP_INFO(node->get_logger(), "num_layers: %d", num_layers);
 
   if (!node->has_parameter("scan_topic"))
   {
@@ -189,7 +181,7 @@ int main(int argc, char* argv[])
     do
     {
       net_fail = false;
-      if (!pf_interface.init(info, config, params, topic, frame_id, num_layers))
+      if (!pf_interface.init(info, config, params, topic, frame_id))
       {
         RCLCPP_ERROR(node->get_logger(), "Unable to initialize device");
         if (!interrupted)

@@ -11,6 +11,8 @@ PFSDPBase::PFSDPBase(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<HandleI
                      std::shared_ptr<ScanConfig> config, std::shared_ptr<ScanParameters> params)
   : http_interface(new HTTPInterface(info->hostname, "cmd")), node_(node), info_(info), config_(config), params_(params)
 {
+  parameters_handle_ =
+      node_->add_on_set_parameters_callback(std::bind(&PFSDPBase::reconfig_callback, this, std::placeholders::_1));
 }
 
 void PFSDPBase::copy_status_from_json(int32_t& error_code, std::string& error_text, Json::Value json_resp)
@@ -219,8 +221,6 @@ ProtocolInfo PFSDPBase::get_protocol_info()
 
   info(opi.protocol_name, opi.version_major, opi.version_minor, opi.commands, error_code, error_text);
 
-  opi.device_family = get_parameter_int("device_family");
-
   return opi;
 }
 
@@ -350,6 +350,38 @@ std::string PFSDPBase::get_product()
 
 void PFSDPBase::get_scan_parameters()
 {
+  auto resp = get_parameter("radial_range_min", "radial_range_max", "sampling_rate_max");
+  params_->radial_range_max = parser_utils::to_float(resp["radial_range_max"]);
+  params_->radial_range_min = parser_utils::to_float(resp["radial_range_min"]);
+  params_->sampling_rate_max = parser_utils::to_long(resp["sampling_rate_max"]);
+
+  params_->layer_count = 1;
+  params_->inclination_count = 1;
+
+  Json::Value json_resp = http_interface->get("get_parameter", { KV("list", "layer_count") });
+  if (json_resp["error_code"].asInt() == 0)
+  {
+    params_->layer_count = json_resp["layer_count"].asInt();
+
+    json_resp = http_interface->get("get_parameter", { KV("list", "layer_inclination") });
+    if (json_resp["error_code"].asInt() == 0)
+    {
+      /* Just check if inclinations are all zero or not. */
+      Json::Value& val(json_resp["layer_inclination"]);
+
+      if (val.isArray())
+      {
+        for (int i = 0; i < val.size(); ++i)
+        {
+          if (val[i].asDouble() != 0.0)
+          {
+            params_->inclination_count = params_->layer_count;
+            break;
+          }
+        }
+      }
+    }
+  }
 }
 
 // handle "dynamic" parameters
@@ -357,6 +389,7 @@ void PFSDPBase::get_scan_parameters()
 rcl_interfaces::msg::SetParametersResult PFSDPBase::reconfig_callback(const std::vector<rclcpp::Parameter>& parameters)
 {
   rcl_interfaces::msg::SetParametersResult result;
+
   result.successful = reconfig_callback_impl(parameters);
 
   if (result.successful)
@@ -422,6 +455,18 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     else if (parameter.get_name() == "skip_scans")
     {
       config_->skip_scans = parameter.as_int();
+    }
+    else if (parameter.get_name() == "packet_type")
+    {
+      std::string packet_type = parameter.as_string();
+      if (packet_type == "A" || packet_type == "B" || packet_type == "C" || packet_type == "C1")
+      {
+        config_->packet_type = packet_type;
+      }
+      else
+      {
+        successful = false;
+      }
     }
   }
 

@@ -12,5 +12,4 @@ struct ProtocolInfo
   std::vector<std::string> commands;  // list of available commands
                                       // Since R2300 may not give correct error reports
                                       // it is safer to keep the list of commands
-  uint16_t device_family;
 };

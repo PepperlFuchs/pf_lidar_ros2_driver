@@ -130,10 +130,6 @@ public:
 
   void pfsdp_init(const rclcpp::Parameter& parameter);
 
-  virtual void declare_specific_parameters()
-  {
-  }
-
   virtual bool reconfig_callback_impl(const std::vector<rclcpp::Parameter>& parameters);
 
   rcl_interfaces::msg::SetParametersResult reconfig_callback(const std::vector<rclcpp::Parameter>& parameters);
