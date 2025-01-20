@@ -27,8 +27,8 @@ int main(int argc, char* argv[])
   int skip_scans = 0;
   bool watchdog = true; /* "true" means: use scanner default */
   bool apply_correction = false;
-  int timesync_interval = 0; /* ms or 0(off) */
-  int timesync_period = 0;   /* ms or 0(no averaging) */
+  int timesync_interval = 0;        /* ms or 0(off) */
+  int timesync_period = 0;          /* ms or 0(no averaging) */
   bool timesync_regression = false; /* perform averaging(false) or linear regression(true) */
 
   if (!node->has_parameter("device"))
@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
     node->declare_parameter("timesync_regression", timesync_regression);
   }
   node->get_parameter("timesync_regression", timesync_regression);
-  RCLCPP_INFO(node->get_logger(), "timesync_regression: %s", timesync_regression ? "yes":"no");
+  RCLCPP_INFO(node->get_logger(), "timesync_regression: %s", timesync_regression ? "yes" : "no");
 
   if (!node->has_parameter("scan_topic"))
   {
