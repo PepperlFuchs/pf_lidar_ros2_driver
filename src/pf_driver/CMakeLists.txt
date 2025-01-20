@@ -47,8 +47,6 @@ set(${PROJECT_NAME}_SOURCES
   src/pf/pf_packet/pf_r2000_packet_c.cpp
   src/pf/pf_packet/pf_r2300_packet.cpp
   src/pf/pf_packet/pf_r2300_packet_c1.cpp
-  src/pf/r2000/pfsdp_2000.cpp
-  src/pf/r2300/pfsdp_2300.cpp
   src/communication/udp_transport.cpp
   src/communication/tcp_transport.cpp
   src/ros/laser_scan_publisher.cpp

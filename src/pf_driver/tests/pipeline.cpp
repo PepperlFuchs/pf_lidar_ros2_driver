@@ -49,7 +49,7 @@ TEST(PFPipeline_TestSuite, testPipelineReadWrite)
   bool net_fail = false;
 
   std::unique_ptr<Transport> transport = std::make_unique<TCPTransport>("127.0.0.1");
-  transport->set_port("1234");
+  transport->set_port(1234);
 
   if (transport->connect())
   {

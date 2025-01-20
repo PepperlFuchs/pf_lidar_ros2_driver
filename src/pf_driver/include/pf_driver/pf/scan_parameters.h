@@ -10,6 +10,8 @@ struct ScanParameters
   bool apply_correction = true;
   int sampling_rate_max = 252000;
   int scan_time_factor = 1;
+  int layer_count = 1;
+  int inclination_count = 1;
 
   TimeSync active_timesync;
   TimeSync passive_timesync;

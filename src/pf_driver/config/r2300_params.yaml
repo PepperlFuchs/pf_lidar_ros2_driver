@@ -2,7 +2,7 @@ pf_r2300:
   ros__parameters:
     transport: "udp"
     scanner_ip: "169.254.235.110"
-    # port: "3000" # optional
+    # port: 3000 # optional
     start_angle: -450000
     max_num_points_scan: 0
     packet_type: "C1"
@@ -10,5 +10,4 @@ pf_r2300:
     frame_id: "scanner_link"
     watchdogtimeout: 60000  # DO NOT MODIFY - this is the only valid value
     watchdog: false
-    num_layers: 4
     apply_correction: true

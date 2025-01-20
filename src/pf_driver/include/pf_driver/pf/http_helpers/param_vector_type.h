@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include <map>
-#include <string>
+#include <vector>
+#include "param_type.h"
 
-using param_map_type = std::map<std::string, std::string>;
+using param_vector_type = std::vector<param_type>;

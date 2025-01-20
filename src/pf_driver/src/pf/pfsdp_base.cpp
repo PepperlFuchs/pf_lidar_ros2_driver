@@ -11,6 +11,8 @@ PFSDPBase::PFSDPBase(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<HandleI
                      std::shared_ptr<ScanConfig> config, std::shared_ptr<ScanParameters> params)
   : http_interface(new HTTPInterface(info->hostname, "cmd")), node_(node), info_(info), config_(config), params_(params)
 {
+  parameters_handle_ =
+      node_->add_on_set_parameters_callback(std::bind(&PFSDPBase::reconfig_callback, this, std::placeholders::_1));
 }
 
 void PFSDPBase::copy_status_from_json(int32_t& error_code, std::string& error_text, Json::Value json_resp)
@@ -62,12 +64,12 @@ const std::map<std::string, std::string> PFSDPBase::get_request(const std::strin
                                                                 const std::vector<std::string>& json_keys,
                                                                 const std::initializer_list<param_type>& query)
 {
-  return get_request(command, json_keys, param_map_type(query.begin(), query.end()));
+  return get_request(command, json_keys, param_vector_type(query.begin(), query.end()));
 }
 
 const std::map<std::string, std::string> PFSDPBase::get_request(const std::string& command,
                                                                 const std::vector<std::string>& json_keys,
-                                                                const param_map_type& query)
+                                                                const param_vector_type& query)
 {
   Json::Value json_resp = http_interface->get(command, query);
 
@@ -219,8 +221,6 @@ ProtocolInfo PFSDPBase::get_protocol_info()
 
   info(opi.protocol_name, opi.version_major, opi.version_minor, opi.commands, error_code, error_text);
 
-  opi.device_family = get_parameter_int("device_family");
-
   return opi;
 }
 
@@ -254,43 +254,29 @@ std::string PFSDPBase::get_parameter_str(const std::string& param)
   return resp[param];
 }
 
-void PFSDPBase::request_handle_tcp(const std::string& port, const std::string& packet_type)
+void PFSDPBase::request_handle_tcp(int port)
 {
-  param_map_type query;
-  if (!packet_type.empty())
+  param_vector_type query;
+  if (!config_->packet_type.empty())
   {
-    query["packet_type"] = packet_type;
+    query.push_back(KV("packet_type", config_->packet_type));
   }
-  else
+  if (port != 0)
   {
-    query["packet_type"] = config_->packet_type;
-  }
-  if (!port.empty())
-  {
-    query["port"] = port;
-  }
-  else if (info_->port.compare("0") != 0)
-  {
-    query["port"] = info_->port;
+    query.push_back(KV("port", port));
   }
   auto resp = get_request("request_handle_tcp", { "handle", "port" }, query);
 
   info_->handle = resp["handle"];
-  info_->port = resp["port"];
-
-  // TODO: port and pkt_type should be updated in config_
+  info_->actual_port = parser_utils::to_long(resp["port"]);
 }
 
-void PFSDPBase::request_handle_udp(const std::string& packet_type)
+void PFSDPBase::request_handle_udp()
 {
-  param_map_type query = { KV("address", info_->endpoint), KV("port", info_->port) };
-  if (!packet_type.empty())
+  param_vector_type query = { KV("address", info_->endpoint), KV("port", info_->actual_port) };
+  if (!config_->packet_type.empty())
   {
-    query["packet_type"] = packet_type;
-  }
-  else
-  {
-    query["packet_type"] = config_->packet_type;
+    query.push_back(KV("packet_type", config_->packet_type));
   }
   auto resp = get_request("request_handle_udp", { "handle", "port" }, query);
   info_->handle = resp["handle"];
@@ -310,36 +296,28 @@ void PFSDPBase::get_scanoutput_config(const std::string& handle)
   config_->max_num_points_scan = parser_utils::to_long(resp["max_num_points_scan"]);
 }
 
-bool PFSDPBase::set_scanoutput_config(const std::string& handle, const ScanConfig& config)
-{
-  param_map_type query = { KV("handle", handle),
-                           KV("start_angle", config.start_angle),
-                           KV("packet_type", config.packet_type),
-                           KV("max_num_points_scan", config.max_num_points_scan),
-                           KV("watchdogtimeout", config.watchdogtimeout),
-                           KV("skip_scans", config.skip_scans),
-                           KV("watchdog", config.watchdog ? "on" : "off") };
-  auto resp = get_request("set_scanoutput_config", { "" }, query);
-
-  // update global config_
-  get_scanoutput_config(handle);
-  get_scan_parameters();
-  return true;
-}
-
 bool PFSDPBase::update_scanoutput_config()
 {
-  param_map_type query = { KV("handle", info_->handle),
-                           KV("start_angle", config_->start_angle),
-                           KV("packet_type", config_->packet_type),
-                           KV("max_num_points_scan", config_->max_num_points_scan),
-                           KV("watchdogtimeout", config_->watchdogtimeout),
-                           KV("skip_scans", config_->skip_scans),
-                           KV("watchdog", config_->watchdog ? "on" : "off") };
-  auto resp = get_request("set_scanoutput_config", { "" }, query);
+  param_vector_type query = { KV("handle", info_->handle) };
 
-  // recalculate scan params
-  get_scan_parameters();
+  query.push_back(KV("start_angle", config_->start_angle));
+  if (!config_->packet_type.empty())
+  {
+    query.push_back(KV("packet_type", config_->packet_type));
+  }
+  query.push_back(KV("max_num_points_scan", config_->max_num_points_scan));
+  query.push_back(KV("skip_scans", config_->skip_scans));
+  if (config_->watchdogtimeout != 0)
+  {
+    query.push_back(KV("watchdogtimeout", config_->watchdogtimeout));
+  }
+  if (config_->watchdog == false)
+  {
+    /* Force watchdog off. Otherwise (if watchdog==true), use scanner default */
+    query.push_back(KV("watchdog", "off"));
+  }
+
+  auto resp = get_request("set_scanoutput_config", { "" }, query);
   return true;
 }
 
@@ -372,6 +350,38 @@ std::string PFSDPBase::get_product()
 
 void PFSDPBase::get_scan_parameters()
 {
+  auto resp = get_parameter("radial_range_min", "radial_range_max", "sampling_rate_max");
+  params_->radial_range_max = parser_utils::to_float(resp["radial_range_max"]);
+  params_->radial_range_min = parser_utils::to_float(resp["radial_range_min"]);
+  params_->sampling_rate_max = parser_utils::to_long(resp["sampling_rate_max"]);
+
+  params_->layer_count = 1;
+  params_->inclination_count = 1;
+
+  Json::Value json_resp = http_interface->get("get_parameter", { KV("list", "layer_count") });
+  if (json_resp["error_code"].asInt() == 0)
+  {
+    params_->layer_count = json_resp["layer_count"].asInt();
+
+    json_resp = http_interface->get("get_parameter", { KV("list", "layer_inclination") });
+    if (json_resp["error_code"].asInt() == 0)
+    {
+      /* Just check if inclinations are all zero or not. */
+      Json::Value& val(json_resp["layer_inclination"]);
+
+      if (val.isArray())
+      {
+        for (int i = 0; i < val.size(); ++i)
+        {
+          if (val[i].asDouble() != 0.0)
+          {
+            params_->inclination_count = params_->layer_count;
+            break;
+          }
+        }
+      }
+    }
+  }
 }
 
 // handle "dynamic" parameters
@@ -379,6 +389,7 @@ void PFSDPBase::get_scan_parameters()
 rcl_interfaces::msg::SetParametersResult PFSDPBase::reconfig_callback(const std::vector<rclcpp::Parameter>& parameters)
 {
   rcl_interfaces::msg::SetParametersResult result;
+
   result.successful = reconfig_callback_impl(parameters);
 
   if (result.successful)
@@ -417,7 +428,7 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     }
     else if (parameter.get_name() == "port")
     {
-      info_->port = parameter.value_to_string();
+      config_->port = parameter.as_int();
     }
     else if (parameter.get_name() == "transport")
     {
@@ -444,6 +455,18 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     else if (parameter.get_name() == "skip_scans")
     {
       config_->skip_scans = parameter.as_int();
+    }
+    else if (parameter.get_name() == "packet_type")
+    {
+      std::string packet_type = parameter.as_string();
+      if (packet_type == "A" || packet_type == "B" || packet_type == "C" || packet_type == "C1")
+      {
+        config_->packet_type = packet_type;
+      }
+      else
+      {
+        successful = false;
+      }
     }
   }
 

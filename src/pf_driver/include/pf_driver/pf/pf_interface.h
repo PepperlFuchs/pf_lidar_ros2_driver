@@ -12,8 +12,7 @@
 #include "pf_driver/pf/pipeline.h"
 #include "pf_driver/pf/timesync.h"
 #include "pf_driver/communication/transport.h"
-#include "pf_driver/pf/r2000/pfsdp_2000.h"
-#include "pf_driver/pf/r2300/pfsdp_2300.h"
+#include "pf_driver/pf/pfsdp_base.h"
 
 #include "pf_interfaces/srv/pfsdp_get_protocol_info.hpp"
 #include "pf_interfaces/srv/pfsdp_reboot_device.hpp"
@@ -32,8 +31,7 @@ public:
   PFInterface(std::shared_ptr<rclcpp::Node> node);
 
   bool init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanConfig> config,
-            std::shared_ptr<ScanParameters> params, const std::string& topic, const std::string& frame_id,
-            const uint16_t num_layers);
+            std::shared_ptr<ScanParameters> params, const std::string& topic, const std::string& frame_id);
 
   bool start_transmission(std::shared_ptr<std::mutex> net_mtx, std::shared_ptr<std::condition_variable> net_cv,
                           bool& net_fail);
@@ -80,7 +78,6 @@ private:
 
   std::string topic_;
   std::string frame_id_;
-  uint16_t num_layers_;
   std::string product_;
 
   std::shared_ptr<HandleInfo> info_;
@@ -113,8 +110,6 @@ private:
   void update_timesync(void);
 
   // factory functions
-  bool handle_version(int major_version, int minor_version, int device_family, const std::string& topic,
-                      const std::string& frame_id, const uint16_t num_layers);
   void add_pf_services(void);
   PipelinePtr get_pipeline(const std::string& packet_type, std::shared_ptr<std::mutex> net_mtx,
                            std::shared_ptr<std::condition_variable> net_cv, bool& net_fail);

@@ -10,6 +10,7 @@ struct ScanConfig
   int start_angle = 0;
   uint max_num_points_scan = 0;
   uint skip_scans = 0;
+  uint port = 0;
   uint timesync_interval = 0;
   int timesync_period = 0;
   bool timesync_regression = false;

@@ -5,7 +5,6 @@
 #include <rclcpp/executors/multi_threaded_executor.hpp>
 #include <rclcpp/node.hpp>
 
-#include "pf_driver/pf/timesync.h"
 #include "pf_driver/pf/pf_interface.h"
 
 int main(int argc, char* argv[])
@@ -14,12 +13,20 @@ int main(int argc, char* argv[])
   auto node = std::make_shared<rclcpp::Node>("pf_driver");
 
   std::vector<std::string> pfsdp_init;
-  std::string device, transport_str, scanner_ip, port, topic, frame_id, packet_type;
-  int samples_per_scan, start_angle, max_num_points_scan, watchdogtimeout, skip_scans, num_layers;
-  port = "0";
-  num_layers = 0;
-  skip_scans = 0;
-  bool watchdog, apply_correction = 0;
+  std::string device;
+  std::string transport_str;
+  std::string scanner_ip;
+  int port = 0; /* 0 means: automatic */
+  std::string topic("/scan");
+  std::string frame_id("scanner_link");
+  std::string packet_type; /* empty means: use scanner default */
+  int samples_per_scan = 0;
+  int start_angle = -1800000;
+  int max_num_points_scan = 0;
+  int watchdogtimeout = 0; /* "0" means: use scanner default */
+  int skip_scans = 0;
+  bool watchdog = true; /* "true" means: use scanner default */
+  bool apply_correction = false;
   int timesync_interval = 0; /* ms or 0(off) */
   int timesync_period = 0;   /* ms or 0(no averaging) */
   bool timesync_regression = false; /* perform averaging(false) or linear regression(true) */
@@ -50,7 +57,7 @@ int main(int argc, char* argv[])
     node->declare_parameter("port", port);
   }
   node->get_parameter("port", port);
-  RCLCPP_INFO(node->get_logger(), "port: %s", port.c_str());
+  RCLCPP_INFO(node->get_logger(), "port: %d", port);
 
   if (!node->has_parameter("start_angle"))
   {
@@ -100,13 +107,6 @@ int main(int argc, char* argv[])
   }
   node->get_parameter("timesync_regression", timesync_regression);
   RCLCPP_INFO(node->get_logger(), "timesync_regression: %s", timesync_regression ? "yes":"no");
-
-  if (!node->has_parameter("num_layers"))
-  {
-    node->declare_parameter("num_layers", num_layers);
-  }
-  node->get_parameter("num_layers", num_layers);
-  RCLCPP_INFO(node->get_logger(), "num_layers: %d", num_layers);
 
   if (!node->has_parameter("scan_topic"))
   {
@@ -159,9 +159,11 @@ int main(int argc, char* argv[])
   info->handle_type = transport_str == "udp" ? HandleInfo::HANDLE_TYPE_UDP : HandleInfo::HANDLE_TYPE_TCP;
 
   info->hostname = node->get_parameter("scanner_ip").get_parameter_value().get<std::string>();
-  info->port = node->get_parameter("port").get_parameter_value().get<std::string>();
+  info->actual_port = -1;
 
   std::shared_ptr<ScanConfig> config = std::make_shared<ScanConfig>();
+
+  config->port = node->get_parameter("port").get_parameter_value().get<int>();
   config->start_angle = node->get_parameter("start_angle").get_parameter_value().get<int>();
   config->max_num_points_scan = node->get_parameter("max_num_points_scan").get_parameter_value().get<int>();
   config->skip_scans = node->get_parameter("skip_scans").get_parameter_value().get<int>();
@@ -206,7 +208,7 @@ int main(int argc, char* argv[])
     do
     {
       net_fail = false;
-      if (!pf_interface.init(info, config, params, topic, frame_id, num_layers))
+      if (!pf_interface.init(info, config, params, topic, frame_id))
       {
         RCLCPP_ERROR(node->get_logger(), "Unable to initialize device");
         if (!interrupted)

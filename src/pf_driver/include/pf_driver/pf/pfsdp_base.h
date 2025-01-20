@@ -24,7 +24,7 @@
 
 #include "pf_driver/pf/http_helpers/http_interface.h"
 #include "pf_driver/pf/http_helpers/param_type.h"
-#include "pf_driver/pf/http_helpers/param_map_type.h"
+#include "pf_driver/pf/http_helpers/param_vector_type.h"
 #include "pf_driver/pf/handle_info.h"
 #include "pf_driver/pf/scan_config.h"
 #include "pf_driver/pf/scan_parameters.h"
@@ -45,7 +45,7 @@ private:
                                                        const std::initializer_list<param_type>& query);
   const std::map<std::string, std::string>
   get_request(const std::string& command, const std::vector<std::string>& json_keys = std::vector<std::string>(),
-              const param_map_type& query = param_map_type());
+              const param_vector_type& query = param_vector_type());
 
   bool get_request_bool(const std::string& command,
                         const std::vector<std::string>& json_keys = std::vector<std::string>(),
@@ -100,15 +100,13 @@ public:
 
   std::string get_parameter_str(const std::string& param);
 
-  void request_handle_tcp(const std::string& port = "", const std::string& packet_type = "");
+  void request_handle_tcp(int port = 0);
 
-  virtual void request_handle_udp(const std::string& packet_type = "");
+  virtual void request_handle_udp();
 
   bool release_handle(const std::string& handle);
 
   virtual void get_scanoutput_config(const std::string& handle);
-
-  bool set_scanoutput_config(const std::string& handle, const ScanConfig& config);
 
   bool update_scanoutput_config();
 
@@ -131,10 +129,6 @@ public:
   void declare_common_parameters();
 
   void pfsdp_init(const rclcpp::Parameter& parameter);
-
-  virtual void declare_specific_parameters()
-  {
-  }
 
   virtual bool reconfig_callback_impl(const std::vector<rclcpp::Parameter>& parameters);
 
