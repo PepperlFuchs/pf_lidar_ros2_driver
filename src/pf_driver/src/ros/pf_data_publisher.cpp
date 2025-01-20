@@ -77,7 +77,6 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     msg->header.frame_id.assign(frame_id_);
     // msg->header.seq = packet.header.header.scan_number;
     msg->scan_time = static_cast<float>(scan_time.seconds());
-    msg->header.stamp = packet.last_acquired_point_stamp - scan_time;
     msg->angle_increment = packet.header.angular_increment / 10000.0 * (M_PI / 180.0);
 
     {
@@ -112,6 +111,13 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
       {
         msg->time_increment = fabs(scan_time.seconds() * (double)packet.header.angular_increment * (1.0 / 3600000.0));
       }
+
+      /* The timestamp in the packet tells about the time when the first sample in the
+         packet was measured, but now is rather shortly after the *last* sample in the
+         packet was measured (plus transmission and OS processing time that we don't know) */
+      const auto time_for_points_in_packet =
+          rclcpp::Duration(0, packet.header.num_points_packet * (unsigned int)(1.0E9 * msg->time_increment));
+      msg->header.stamp = packet.last_acquired_point_stamp - time_for_points_in_packet;
 
       msg->range_min = params_->radial_range_min;
       msg->range_max = params_->radial_range_max;
