@@ -112,13 +112,6 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
         msg->time_increment = fabs(scan_time.seconds() * (double)packet.header.angular_increment * (1.0 / 3600000.0));
       }
 
-      /* The timestamp in the packet tells about the time when the first sample in the
-         packet was measured, but now is rather shortly after the *last* sample in the
-         packet was measured (plus transmission and OS processing time that we don't know) */
-      const auto time_for_points_in_packet =
-          rclcpp::Duration(0, packet.header.num_points_packet * (unsigned int)(1.0E9 * msg->time_increment));
-      msg->header.stamp = packet.last_acquired_point_stamp - time_for_points_in_packet;
-
       msg->range_min = params_->radial_range_min;
       msg->range_max = params_->radial_range_max;
     }
@@ -152,16 +145,32 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     params_->active_timesync.reset(0.0);
   }
 
+  /* The timestamp in the packet tells about the time when the first sample in the
+     packet was measured, but now is rather shortly after the *last* sample in the
+     packet was measured (plus transmission and OS processing time that we don't know) */
   params_->passive_timesync.update(packet.header.timestamp_raw +
                                        (uint64_t)(packet.header.num_points_packet * msg->time_increment * pow(2.0, 32)),
                                    0, rclcpp::Clock().now());
 
-  rclcpp::Time t;
   if (config_->timesync_interval > 0 && params_->active_timesync.valid())
+  {
+    rclcpp::Time t;
     params_->active_timesync.sensor_to_pc(packet.header.timestamp_raw, t);
-  else
+    msg->header.stamp = t;
+  }
+  else if (params_->passive_timesync.valid())
+  {
+    rclcpp::Time t;
     params_->passive_timesync.sensor_to_pc(packet.header.timestamp_raw, t);
-  msg->header.stamp = t;
+    msg->header.stamp = t;
+  }
+  else
+  {
+    /* No timesync, just estimate acquisition time from most recent reception time */
+    const auto time_for_points_in_packet =
+        rclcpp::Duration(0, packet.header.num_points_packet * (unsigned int)(1.0E9 * msg->time_increment));
+    msg->header.stamp = packet.last_acquired_point_stamp - time_for_points_in_packet;
+  }
 
   // errors in scan_number - not in sequence sometimes
   /*if (msg->header.seq != packet.header.header.scan_number)
