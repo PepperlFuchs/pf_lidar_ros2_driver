@@ -69,14 +69,12 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
   {
     /* Information in packet is inconsistent.
 
-      Most probably (at startup or after changing parameters) the
+      Most probably (at startup or after changing parameters) with R2000 the
       header.scan_frequency does not match the actual physical frequency ("unstable
       rotation") and thus the time_increment from header does not match the
-      real sample frequency
-
+      real sample frequency. TBD: Just ignore this packet or all up to now?
     */
     params_->passive_timesync.reset(0.0);
-    params_->active_timesync.reset(0.0);
   }
 
   sensor_msgs::msg::LaserScan::SharedPtr msg;
