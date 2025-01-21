@@ -65,6 +65,20 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
   if (!check_status(packet.header.status_flags))
     return;
 
+  if (packet.header.status_flags != 0)
+  {
+    /* Information in packet is inconsistent.
+
+      Most probably (at startup or after changing parameters) the
+      header.scan_frequency does not match the actual physical frequency ("unstable
+      rotation") and thus the time_increment from header does not match the
+      real sample frequency
+
+    */
+    params_->passive_timesync.reset(0.0);
+    params_->active_timesync.reset(0.0);
+  }
+
   sensor_msgs::msg::LaserScan::SharedPtr msg;
   if (d_queue_.empty())
     d_queue_.emplace_back();
@@ -116,60 +130,55 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
       msg->range_max = params_->radial_range_max;
     }
 
+    /* The timestamp in the packet tells about the time when the first sample in the
+       packet was measured, but now is rather shortly after the *last* sample in the
+       packet was measured (plus transmission and OS processing time that we don't know). */
+
+    /* To compute this, the time_increment must be known and up to date */
+    params_->passive_timesync.update(
+        packet.header.timestamp_raw + (uint64_t)(packet.header.num_points_packet * msg->time_increment * pow(2.0, 32)),
+        0, rclcpp::Clock().now());
+
+    RCLCPP_INFO(rclcpp::get_logger("timesync"), "packet#1 with %08x %u %u %f", packet.header.status_flags,
+                packet.header.num_points_packet, packet.header.scan_frequency, msg->time_increment);
+
+    rclcpp::Time first_acquired_point_stamp;
+    if (config_->timesync_interval > 0 && params_->active_timesync.valid())
+    {
+      params_->active_timesync.sensor_to_pc(packet.header.timestamp_raw, first_acquired_point_stamp);
+    }
+    else if (config_->timesync_period > 0 && params_->passive_timesync.valid())
+    {
+      params_->passive_timesync.sensor_to_pc(packet.header.timestamp_raw, first_acquired_point_stamp);
+    }
+    else
+    {
+      /* No averaging, just estimate acquisition time from most recent reception time */
+      const auto time_for_points_in_packet =
+          rclcpp::Duration(0, packet.header.num_points_packet * (unsigned int)(1.0E9 * msg->time_increment));
+      first_acquired_point_stamp = packet.last_acquired_point_stamp - time_for_points_in_packet;
+    }
+    msg->header.stamp = first_acquired_point_stamp;
+
     msg->ranges.resize(packet.header.num_points_scan);
     msg->intensities.resize(packet.amplitude.empty() ? 0 : packet.header.num_points_scan);
 
     d_queue_.push_back(msg);
   }
+
   msg = d_queue_.back();
   if (!msg)
     return;
 
-  /* The timestamp in the packet tells about the time when the first sample in the
-        packet was measured, but now is rather shortly after the *last* sample in the
-        packet was measured (plus transmission and OS processing time that we don't know) */
-  RCLCPP_INFO(rclcpp::get_logger("timesync"), "packet with %08x %u %u %f", packet.header.status_flags,
-              packet.header.num_points_packet, packet.header.scan_frequency, msg->time_increment);
-
-  if (packet.header.status_flags != 0)
+  if (packet.header.header.packet_number != 1)
   {
-    /* Information in packet is inconsistent.
+    /* Not first packet: Just update passive timesync from packet. No need to update msg.header */
+    params_->passive_timesync.update(
+        packet.header.timestamp_raw + (uint64_t)(packet.header.num_points_packet * msg->time_increment * pow(2.0, 32)),
+        0, rclcpp::Clock().now());
 
-      Most probably (at startup or after changing parameters) the
-      header.scan_frequency does not match the actual physical frequency ("unstable
-      rotation") and thus the time_increment from header does not match the
-      real sample frequency
-
-    */
-    params_->passive_timesync.reset(0.0);
-    params_->active_timesync.reset(0.0);
-  }
-
-  /* The timestamp in the packet tells about the time when the first sample in the
-     packet was measured, but now is rather shortly after the *last* sample in the
-     packet was measured (plus transmission and OS processing time that we don't know) */
-  params_->passive_timesync.update(packet.header.timestamp_raw +
-                                       (uint64_t)(packet.header.num_points_packet * msg->time_increment * pow(2.0, 32)),
-                                   0, rclcpp::Clock().now());
-
-  if (config_->timesync_interval > 0 && params_->active_timesync.valid())
-  {
-    rclcpp::Time t;
-    params_->active_timesync.sensor_to_pc(packet.header.timestamp_raw, t);
-    msg->header.stamp = t;
-  }
-  else if (params_->passive_timesync.valid())
-  {
-    rclcpp::Time t;
-    params_->passive_timesync.sensor_to_pc(packet.header.timestamp_raw, t);
-    msg->header.stamp = t;
-  }
-  else
-  {
-    /* No timesync, just estimate acquisition time from most recent reception time */
-    const auto time_for_points_in_packet =
-        rclcpp::Duration(0, packet.header.num_points_packet * (unsigned int)(1.0E9 * msg->time_increment));
-    msg->header.stamp = packet.last_acquired_point_stamp - time_for_points_in_packet;
+    RCLCPP_INFO(rclcpp::get_logger("timesync"), "packet#X with %08x %u %u %f", packet.header.status_flags,
+                packet.header.num_points_packet, packet.header.scan_frequency, msg->time_increment);
   }
 
   // errors in scan_number - not in sequence sometimes
