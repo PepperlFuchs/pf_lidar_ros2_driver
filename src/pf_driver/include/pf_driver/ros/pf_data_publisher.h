@@ -34,7 +34,11 @@ protected:
   bool check_status(uint32_t status_flags);
 
   template <typename T>
+  void update_timesync(T& packet, sensor_msgs::msg::LaserScan::SharedPtr msg);
+
+  template <typename T>
   void to_msg_queue(T& packet, uint16_t layer_idx = 0, int layer_inclination = 0);
+
   virtual void handle_scan(sensor_msgs::msg::LaserScan::SharedPtr msg, uint16_t layer_idx, int layer_inclination,
                            bool apply_correction = true) = 0;
 

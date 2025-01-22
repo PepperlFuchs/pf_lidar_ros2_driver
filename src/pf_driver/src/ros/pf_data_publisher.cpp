@@ -11,8 +11,6 @@
 
 #include <cmath>
 
-#include <cmath>
-
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -56,15 +54,28 @@ bool PFDataPublisher::stop()
   return true;
 }
 
+template <typename T>
+void PFDataPublisher::update_timesync(T& packet, sensor_msgs::msg::LaserScan::SharedPtr msg)
+{
+    /* The timestamp in the packet tells about the time when the first sample in the
+       packet was measured, but now is rather shortly after the *last* sample in the
+       packet was measured (plus transmission and OS processing time that we don't know). */
+
+    /* To compute this, the time_increment must be known and up to date */
+    params_->passive_timesync.update(
+        packet.header.timestamp_raw + (uint64_t)(packet.header.num_points_packet * msg->time_increment * pow(2.0, 32)),
+        0, rclcpp::Clock().now());
+
+    RCLCPP_INFO(rclcpp::get_logger("timesync"), "packet#1 with %08x %u %u %f", packet.header.status_flags,
+                packet.header.num_points_packet, packet.header.scan_frequency, msg->time_increment);
+}
+
 // What are validation checks required here?
 // Skipped scans?
 // Device errors?
 template <typename T>
 void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_inclination)
 {
-  if (!check_status(packet.header.status_flags))
-    return;
-
   if (packet.header.status_flags != 0)
   {
     /* Information in packet is inconsistent.
@@ -75,20 +86,27 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
       real sample frequency. TBD: Just ignore this packet or all up to now?
     */
     params_->passive_timesync.reset(0.0);
+
+    return;
   }
 
   sensor_msgs::msg::LaserScan::SharedPtr msg;
+
   if (d_queue_.empty())
     d_queue_.emplace_back();
   else if (d_queue_.size() > 5)
     d_queue_.pop_front();
+
   if (packet.header.header.packet_number == 1)
   {
-    const auto scan_time = rclcpp::Duration(0, 1000000ul * (1000000ul / packet.header.scan_frequency));
     msg.reset(new sensor_msgs::msg::LaserScan());
+
     msg->header.frame_id.assign(frame_id_);
     // msg->header.seq = packet.header.header.scan_number;
+
+    const auto scan_time = rclcpp::Duration(0, 1000000ul * (1000000ul / packet.header.scan_frequency));
     msg->scan_time = static_cast<float>(scan_time.seconds());
+
     msg->angle_increment = packet.header.angular_increment / 10000.0 * (M_PI / 180.0);
 
     {
@@ -128,17 +146,7 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
       msg->range_max = params_->radial_range_max;
     }
 
-    /* The timestamp in the packet tells about the time when the first sample in the
-       packet was measured, but now is rather shortly after the *last* sample in the
-       packet was measured (plus transmission and OS processing time that we don't know). */
-
-    /* To compute this, the time_increment must be known and up to date */
-    params_->passive_timesync.update(
-        packet.header.timestamp_raw + (uint64_t)(packet.header.num_points_packet * msg->time_increment * pow(2.0, 32)),
-        0, rclcpp::Clock().now());
-
-    RCLCPP_INFO(rclcpp::get_logger("timesync"), "packet#1 with %08x %u %u %f", packet.header.status_flags,
-                packet.header.num_points_packet, packet.header.scan_frequency, msg->time_increment);
+    update_timesync(packet, msg);
 
     rclcpp::Time first_acquired_point_stamp;
     if (config_->timesync_interval > 0 && params_->active_timesync.valid())
@@ -171,12 +179,8 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
   if (packet.header.header.packet_number != 1)
   {
     /* Not first packet: Just update passive timesync from packet. No need to update msg.header */
-    params_->passive_timesync.update(
-        packet.header.timestamp_raw + (uint64_t)(packet.header.num_points_packet * msg->time_increment * pow(2.0, 32)),
-        0, rclcpp::Clock().now());
 
-    RCLCPP_INFO(rclcpp::get_logger("timesync"), "packet#X with %08x %u %u %f", packet.header.status_flags,
-                packet.header.num_points_packet, packet.header.scan_frequency, msg->time_increment);
+    update_timesync(packet, msg);
   }
 
   // errors in scan_number - not in sequence sometimes
@@ -234,11 +238,4 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
       d_queue_.pop_back();
     }
   }
-}
-
-// check the status bits here with a switch-case
-bool PFDataPublisher::check_status(uint32_t status_flags)
-{
-  // if(packet.header.header.scan_number > packet.)
-  return (status_flags == 0);
 }
