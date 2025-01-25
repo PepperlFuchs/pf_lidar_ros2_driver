@@ -57,17 +57,17 @@ bool PFDataPublisher::stop()
 template <typename T>
 void PFDataPublisher::update_timesync(T& packet)
 {
-    /* The timestamp in the packet tells about the time when the first sample in the
-       packet was measured, but now is rather shortly after the *last* sample in the
-       packet was measured (plus transmission and OS processing time that we don't know). */
+  /* The timestamp in the packet tells about the time when the first sample in the
+     packet was measured, but now is rather shortly after the *last* sample in the
+     packet was measured (plus transmission and OS processing time that we don't know). */
 
-    /* To compute this, the time_increment must be known and up to date */
-    params_->passive_timesync.update(
-        packet.header.timestamp_raw + (uint64_t)(packet.header.num_points_packet * msg_->time_increment * pow(2.0, 32)),
-        0, rclcpp::Clock().now());
+  /* To compute this, the time_increment must be known and up to date */
+  params_->passive_timesync.update(
+      packet.header.timestamp_raw + (uint64_t)(packet.header.num_points_packet * msg_->time_increment * pow(2.0, 32)),
+      0, rclcpp::Clock().now());
 
-    RCLCPP_INFO(rclcpp::get_logger("timesync"), "packet#1 with %08x %u %u %f", packet.header.status_flags,
-                packet.header.num_points_packet, packet.header.scan_frequency, msg_->time_increment);
+  RCLCPP_INFO(rclcpp::get_logger("timesync"), "packet#1 with %08x %u %u %f", packet.header.status_flags,
+              packet.header.num_points_packet, packet.header.scan_frequency, msg_->time_increment);
 }
 
 // What are validation checks required here?
@@ -107,7 +107,7 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
 
       msg_->angle_min = ((double)packet.header.first_angle) * (M_PI / 1800000.0);
       msg_->angle_max = msg_->angle_min +
-                       ((double)packet.header.num_points_scan * packet.header.angular_increment) * (M_PI / 1800000.0);
+                        ((double)packet.header.num_points_scan * packet.header.angular_increment) * (M_PI / 1800000.0);
 
       if (std::is_same<T, PFR2300Packet_C1>::value)  // packet interpretation specific to R2300 output
       {
