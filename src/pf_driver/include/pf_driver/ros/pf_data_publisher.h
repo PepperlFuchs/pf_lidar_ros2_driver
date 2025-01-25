@@ -25,7 +25,8 @@ public:
 
 protected:
   std::string frame_id_;
-  std::deque<sensor_msgs::msg::LaserScan::SharedPtr> d_queue_;
+  uint16_t scan_number_;
+  sensor_msgs::msg::LaserScan::SharedPtr msg_;
   std::mutex q_mutex_;
 
   std::shared_ptr<ScanConfig> config_;
@@ -34,7 +35,7 @@ protected:
   bool check_status(uint32_t status_flags);
 
   template <typename T>
-  void update_timesync(T& packet, sensor_msgs::msg::LaserScan::SharedPtr msg);
+  void update_timesync(T& packet);
 
   template <typename T>
   void to_msg_queue(T& packet, uint16_t layer_idx = 0, int layer_inclination = 0);
