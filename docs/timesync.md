@@ -35,6 +35,16 @@ of reach in this implementation.
 
 Typically however it is only very few milliseconds with noticable some exceptions.
 
+Attention: When using TCP, the relationship of physical reception time and
+packet evaluation time becomes even more questionable because buffering and
+other optimization methods for more reliable communication can introduce more
+delays. For example, the Ethernet receiver logic might automagically combine
+two incoming frames into a large one, unknown to all processing afterwards,
+effectively delaying the evaluation of the first frame until the second frame;
+the two frames then reach the application (ROS driver) at the same time.
+
+Therefore, using UDP is recommended over TCP if timing info is a priority.
+
 
 ### Continuous requests for sensor time
 
