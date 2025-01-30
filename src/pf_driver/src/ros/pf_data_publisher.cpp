@@ -62,12 +62,14 @@ void PFDataPublisher::update_timesync(T& packet)
      packet was measured (plus transmission and OS processing time that we don't know). */
 
   /* To compute this, the time_increment must be known and up to date */
-  params_->passive_timesync.update(
-      packet.header.timestamp_raw + (uint64_t)(packet.header.num_points_packet * msg_->time_increment * pow(2.0, 32)),
-      0, rclcpp::Clock().now());
+  const auto time_for_points_in_packet =
+      rclcpp::Duration(0, packet.header.num_points_packet * (unsigned int)(1.0E9 * msg_->time_increment));
+  params_->passive_timesync.update(packet.header.timestamp_raw, 0, rclcpp::Clock().now() - time_for_points_in_packet);
 
-  RCLCPP_INFO(rclcpp::get_logger("timesync"), "packet#1 with %08x %u %u %f", packet.header.status_flags,
-              packet.header.num_points_packet, packet.header.scan_frequency, msg_->time_increment);
+  RCLCPP_DEBUG(rclcpp::get_logger("timesync"), "packet#%d.%d.%d with %x %lu %.3f %u %u %f", scan_number_,
+               packet.header.header.scan_number, packet.header.header.packet_number, packet.header.status_flags,
+               packet.header.timestamp_raw, (rclcpp::Clock().now() - time_for_points_in_packet).seconds(),
+               packet.header.num_points_packet, packet.header.scan_frequency, 1.0E6 * msg_->time_increment);
 }
 
 // What are validation checks required here?
@@ -164,15 +166,16 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
 
   if (packet.header.header.packet_number != 1)
   {
-    /* Not first packet: Just update passive timesync from packet. No need to update msg.header */
-
-    update_timesync(packet);
-
-    // errors in scan_number - not in sequence sometimes
     if (scan_number_ != packet.header.header.scan_number)
     {
+      /* Header info has not been set, and time_increment might be inconsistent ..
+         do not use such packet for timesync update, and scan info is incomplete anyway.. Discard. */
+      // RCLCPP_DEBUG(rclcpp::get_logger("timesync"), "skip incomplete scan");
       return;
     }
+
+    /* Not first packet: Just update passive timesync from packet. No need to update msg.header */
+    update_timesync(packet);
   }
 
   int idx = packet.header.first_index;
