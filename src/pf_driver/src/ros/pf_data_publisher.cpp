@@ -54,6 +54,10 @@ bool PFDataPublisher::stop()
   return true;
 }
 
+/** Update statistics for timesync based on packet reception time,
+ *  given a packet with sensor time and packet reception time. The
+ *  time_increment (sample period) must be known and passed in msg.
+ */
 template <typename T>
 void PFDataPublisher::update_timesync(T& packet)
 {
@@ -88,11 +92,21 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
       real sample frequency. TBD: Just ignore this packet or all up to now?
     */
     params_->passive_timesync.reset(0.0);
-    return;
   }
 
-  if (packet.header.header.packet_number == 1)
+  if (packet.header.header.scan_number != scan_number_)
   {
+    /* The incoming packet belongs to another scan than we have been recording until now. */
+
+    /* TBD: Check if msg already has some data and handle_scan even if it's incomplete? */
+    //  handle_scan(msg_, layer_idx, layer_inclination, params_->apply_correction);
+
+    if (packet.header.header.packet_number != 1)
+    {
+      /* TBD: Discard whole scan if any packet is missing? */
+      //return;
+    }
+
     msg_.reset(new sensor_msgs::msg::LaserScan());
 
     msg_->header.frame_id.assign(frame_id_);
@@ -154,27 +168,25 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     else
     {
       /* No averaging, just estimate acquisition time from most recent reception time */
-      const auto time_for_points_in_packet =
-          rclcpp::Duration(0, packet.header.num_points_packet * (unsigned int)(1.0E9 * msg_->time_increment));
-      first_acquired_point_stamp = packet.last_acquired_point_stamp - time_for_points_in_packet;
+      int points_to_end_of_packet = packet.header.first_index + packet.header.num_points_packet;
+      const auto time_for_measurement =
+          rclcpp::Duration(0, points_to_end_of_packet * (unsigned int)(1.0E9 * msg_->time_increment));
+
+      first_acquired_point_stamp = packet.last_acquired_point_stamp - time_for_measurement;
     }
     msg_->header.stamp = first_acquired_point_stamp;
 
     msg_->ranges.resize(packet.header.num_points_scan);
     msg_->intensities.resize(packet.amplitude.empty() ? 0 : packet.header.num_points_scan);
+
+    /* TBD: Preload ranges and intensities with NaN? */
+    //msg_->ranges.assign(packet.header.num_points_scan, vector<float>(size, std::numeric_limits<float>::quiet_NaN()));
+
   }
-
-  if (packet.header.header.packet_number != 1)
+  else
   {
-    if (scan_number_ != packet.header.header.scan_number)
-    {
-      /* Header info has not been set, and time_increment might be inconsistent ..
-         do not use such packet for timesync update, and scan info is incomplete anyway.. Discard. */
-      // RCLCPP_DEBUG(rclcpp::get_logger("timesync"), "skip incomplete scan");
-      return;
-    }
-
     /* Not first packet: Just update passive timesync from packet. No need to update msg.header */
+
     update_timesync(packet);
   }
 
