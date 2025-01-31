@@ -104,7 +104,7 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     if (packet.header.header.packet_number != 1)
     {
       /* TBD: Discard whole scan if any packet is missing? */
-      //return;
+      // return;
     }
 
     msg_.reset(new sensor_msgs::msg::LaserScan());
@@ -180,8 +180,7 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     msg_->intensities.resize(packet.amplitude.empty() ? 0 : packet.header.num_points_scan);
 
     /* TBD: Preload ranges and intensities with NaN? */
-    //msg_->ranges.assign(packet.header.num_points_scan, vector<float>(size, std::numeric_limits<float>::quiet_NaN()));
-
+    // msg_->ranges.assign(packet.header.num_points_scan, vector<float>(size, std::numeric_limits<float>::quiet_NaN()));
   }
   else
   {
