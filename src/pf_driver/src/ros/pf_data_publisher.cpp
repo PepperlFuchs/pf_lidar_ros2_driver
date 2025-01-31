@@ -94,7 +94,7 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     params_->passive_timesync.reset(0.0);
   }
 
-  if (packet.header.header.scan_number != scan_number_)
+  if (packet.header.header.scan_number != scan_number_ || !msg_)
   {
     /* The incoming packet belongs to another scan than we have been recording until now. */
 
