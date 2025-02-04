@@ -67,8 +67,8 @@ long TimeSync::time_to_full_sensor_second(rclcpp::Time& pc_time)
 
   rclcpp::Time sensor_time = sensor_base_ + rclcpp::Duration(conv_time);
 
-  /* Return remainder until full second */
-  return 1000000000l - sensor_time.nanoseconds();
+  /* Return remainder until full second on sensor */
+  return 1000000000l - (sensor_time.nanoseconds() % 1000000000);
 }
 
 void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp::Time pc_time)
