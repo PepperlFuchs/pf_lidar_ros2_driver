@@ -58,6 +58,19 @@ void TimeSync::sensor_to_pc(uint64_t sensor_time_raw, rclcpp::Time& pc_time)
   RCLCPP_INFO(rclcpp::get_logger("timesync"), "calc: %f %f", sensor_time.seconds(), pc_time.seconds());
 }
 
+/* Compute the nanoseconds remaining until the system_time_raw reaches a full second (for HW timesync) */
+long TimeSync::time_to_full_sensor_second(rclcpp::Time& pc_time)
+{
+  std::lock_guard<std::mutex> guard(access_);
+
+  std::chrono::duration<double> conv_time(((pc_time - pc_base_).seconds() - base_time_) / (1.0 + scale_time_));
+
+  rclcpp::Time sensor_time = sensor_base_ + rclcpp::Duration(conv_time);
+
+  /* Return remainder until full second */
+  return 1000000000l - sensor_time.nanoseconds();
+}
+
 void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp::Time pc_time)
 {
   const int nominal_samples = (period_ == 0) ? 1 : 200;
