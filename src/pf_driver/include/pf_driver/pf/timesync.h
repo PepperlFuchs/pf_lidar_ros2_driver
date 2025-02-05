@@ -24,6 +24,7 @@ private:
   std::deque<TimeSync_Sample> samples_;
 
   uint64_t sum_req_duration_us_;
+  double off_usec_;
   double base_time_;
   double scale_time_;
   int period_;
@@ -35,7 +36,7 @@ private:
 
 public:
   TimeSync();
-  void init(int period, bool linear_regression);
+  void init(int period, int off_usec, bool linear_regression);
   void reset(double since);
   void update(uint64_t sensor_time_raw, unsigned req_duration, rclcpp::Time pc_time);
   bool valid(void);

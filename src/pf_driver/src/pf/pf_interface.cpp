@@ -22,8 +22,8 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
   info_ = info;
   params_ = params;
 
-  params_->active_timesync.init(config_->timesync_period, config_->timesync_regression);
-  params_->passive_timesync.init(config_->timesync_period, config_->timesync_regression);
+  params_->active_timesync.init(config_->timesync_period, config_->timesync_off_usec, config_->timesync_regression);
+  params_->passive_timesync.init(config_->timesync_period, config_->timesync_off_usec, config_->timesync_regression);
 
   topic_ = topic;
   frame_id_ = frame_id;

@@ -132,6 +132,16 @@ is kept for averaging and `timesync_regression` may be set to `true` if
 linear regression is preferred over simple averaging for computing the ROS
 time from sensor time.
 
+Finally, `timestamp_off_usec` allows to specify a fixed duration (in microseconds)
+which will be added to the PC time computed from sensor time, to compensate for
+a known extra offset between computed and actual time. When using the packet
+reception timestamps (`timesync_interval=0`) for estimation, you typically have
+to compensate for a time that is a little behind (larger) with a negative
+value, e.g. -3000.  When using extra HTTP requests, the computed time instead
+appears to be ahead of the actual time so the value typically must be positive,
+e.g. 10000, often dependent on the load caused by current amount of data to
+handle (scan frequency X scan size).
+
 Typical setups are described below. The currently recommended setup is to leave
 both parameters at 0 if timestamp accuracy and jitter is not a concern,
 otherwise `transport udp`, `timesync_interval 0` and `timesync_period 10000`.
@@ -150,7 +160,8 @@ time" directly affect the timestamp in output. Expect several milliseconds of
 jitter in the resulting LaserScan timestamps.
 
     timesync_interval: 0
-    timesync_period: 0
+    timesync_period:   0
+    timesync_off_usec: 0
 
 #### Smoothed from packet reception time
 
@@ -159,16 +170,19 @@ compute average offset and slope of PC time compared to sensor time. The result
 is used to convert timestamps from sensor to ROS time.
 
 Pro: This gives much more consistent and stable timestamps in the LaserScan
-output header with less jitter.
+output header with less jitter. 3ms of stable latency can be compensated for by
+decrementing the PC time computed from sensor time by this amount (adding a
+negative `timesync_off_usec`).
 
-Unvertainty: The average latency from sensor to evaluation on PC is not known
-and thus cannot be accounted for. It probably is quite stable for a given setup,
-in a range of only a few milliseconds, but in theory, if there was some network
-device delaying the transmission or some time consuming processing before each
-evaluation, the driver can't notice.
+Uncertainty: The average latency from sensor to evaluation on PC is not known
+and thus cannot be accounted for automatically. It probably is quite stable for
+a given setup, in a range of only a few milliseconds, but in theory, if there
+was some network device delaying the transmission or some time consuming
+processing before each evaluation, the driver can't notice.
 
     timesync_interval: 0
-    timesync_period: 10000
+    timesync_period:   10000
+    timesync_off_usec: -3000
 
 #### Smoothed from extra HTTP requests for `system_time_raw`
 
@@ -179,13 +193,14 @@ computing sensor time vs. PC time offset and slope.
 Pro: The time for making the request and receiving the answer is a known upper
 bound for possible error in computed time offset.
 
-Con: This needs extra communication which might be a burden to the sensor at
-high sample rates.
+Con: This needs extra communication which might be a burden to the sensor 
+especially at high sample rates, and increase risk of gaps in scan data.
 
 Note that `timesync_period` must be larger than `timesync_interval`.
 
     timesync_interval: 250
-    timesync_period: 10000
+    timesync_period:   10000
+    timesync_off_usec: 7000
 
 
 ### Caveats

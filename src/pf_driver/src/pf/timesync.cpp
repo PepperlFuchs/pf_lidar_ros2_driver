@@ -19,10 +19,11 @@ void TimeSync::reset(double since)
   RCLCPP_INFO(rclcpp::get_logger("timesync"), "reset %f", since);
 }
 
-void TimeSync::init(int period, bool linear_regression)
+void TimeSync::init(int period, int off_usec, bool linear_regression)
 {
   reset(0.0);
   period_ = period;
+  off_usec_ = 1.0E-6 * (double)off_usec;
   linear_regression_ = linear_regression;
 }
 
@@ -50,7 +51,7 @@ void TimeSync::sensor_to_pc(uint64_t sensor_time_raw, rclcpp::Time& pc_time)
     auto reduced_sensor_time(sensor_time - sensor_base_);
 
     double sensor_seconds = reduced_sensor_time.seconds();
-    std::chrono::duration<double> conv_time(base_time_ + sensor_seconds + scale_time_ * sensor_seconds);
+    std::chrono::duration<double> conv_time(base_time_ + off_usec_ + sensor_seconds + scale_time_ * sensor_seconds);
 
     pc_time = pc_base_ + rclcpp::Duration(conv_time);
   }
@@ -63,7 +64,8 @@ long TimeSync::time_to_full_sensor_second(rclcpp::Time& pc_time)
 {
   std::lock_guard<std::mutex> guard(access_);
 
-  std::chrono::duration<double> conv_time(((pc_time - pc_base_).seconds() - base_time_) / (1.0 + scale_time_));
+  std::chrono::duration<double> conv_time(((pc_time - pc_base_).seconds() - off_usec_ - base_time_) /
+                                          (1.0 + scale_time_));
 
   rclcpp::Time sensor_time = sensor_base_ + rclcpp::Duration(conv_time);
 

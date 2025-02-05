@@ -170,7 +170,8 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
       /* No averaging, just estimate acquisition time from most recent reception time */
       int points_to_end_of_packet = packet.header.first_index + packet.header.num_points_packet;
       const auto time_for_measurement =
-          rclcpp::Duration(0, points_to_end_of_packet * (unsigned int)(1.0E9 * msg_->time_increment));
+          rclcpp::Duration(0, points_to_end_of_packet * (unsigned int)(1.0E9 * msg_->time_increment) +
+                                  1000 * config_->timesync_off_usec);
 
       first_acquired_point_stamp = packet.last_acquired_point_stamp - time_for_measurement;
     }

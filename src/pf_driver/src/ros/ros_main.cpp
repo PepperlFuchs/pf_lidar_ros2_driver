@@ -29,6 +29,7 @@ int main(int argc, char* argv[])
   bool apply_correction = false;
   int timesync_interval = 0;        /* ms or 0(off) */
   int timesync_period = 0;          /* ms or 0(no averaging) */
+  int timesync_off_usec = 0;        /* us to be added to PC timestamp after conversion from sensor timestamp */
   bool timesync_regression = false; /* perform averaging(false) or linear regression(true) */
 
   if (!node->has_parameter("device"))
@@ -100,6 +101,13 @@ int main(int argc, char* argv[])
   }
   node->get_parameter("timesync_period", timesync_period);
   RCLCPP_INFO(node->get_logger(), "timesync_period: %d", timesync_period);
+
+  if (!node->has_parameter("timesync_off_usec"))
+  {
+    node->declare_parameter("timesync_off_usec", timesync_off_usec);
+  }
+  node->get_parameter("timesync_off_usec", timesync_off_usec);
+  RCLCPP_INFO(node->get_logger(), "timesync_off_usec: %d", timesync_off_usec);
 
   if (!node->has_parameter("timesync_regression"))
   {
@@ -173,6 +181,7 @@ int main(int argc, char* argv[])
   RCLCPP_INFO(node->get_logger(), "start_angle: %d", config->start_angle);
   config->timesync_interval = node->get_parameter("timesync_interval").get_parameter_value().get<int>();
   config->timesync_period = node->get_parameter("timesync_period").get_parameter_value().get<int>();
+  config->timesync_off_usec = node->get_parameter("timesync_off_usec").get_parameter_value().get<int>();
   config->timesync_regression = node->get_parameter("timesync_regression").get_parameter_value().get<bool>();
 
   std::shared_ptr<ScanParameters> params = std::make_shared<ScanParameters>();
