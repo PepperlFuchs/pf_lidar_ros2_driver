@@ -1,13 +1,14 @@
 pf_r2300:
   ros__parameters:
     transport: "udp"
-    scanner_ip: "169.254.235.110"
+    scanner_ip: "169.254.51.21"
     # port: 3000 # optional
     start_angle: -500000
     max_num_points_scan: 0
     packet_type: "C1"
     scan_topic: "/pf/cloud"
     frame_id: "scanner_link"
-    watchdogtimeout: 60000  # DO NOT MODIFY - this is the only valid value
     watchdog: false
+    watchdogtimeout: 60000  # DO NOT MODIFY - this is the only valid value
     apply_correction: true
+    pfsdp_init: ['scan_frequency=50', 'filter_type=moving_median', 'filter_width=8']
