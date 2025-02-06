@@ -1,0 +1,14 @@
+pf_r2000:
+  ros__parameters:
+    transport: "udp"
+    scanner_ip: "10.0.10.9"
+    # port: 3000 # optional
+    device: "R2000"
+    start_angle: -1800000
+    max_num_points_scan: 0
+    packet_type: "C"
+    scan_topic: "/pf/scan"
+    frame_id: "scanner_link"
+    watchdogtimeout: 60000
+    watchdog: true
+    pfsdp_init: ['scan_frequency=20', 'samples_per_scan=3600', 'filter_type=none', 'lcm_detection_sensitivity=disabled', 'hmi_display_mode=static_logo']
