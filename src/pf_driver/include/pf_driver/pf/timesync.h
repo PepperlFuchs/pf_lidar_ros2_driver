@@ -40,7 +40,7 @@ private:
   double base_time_;
   double scale_time_;
   int period_;
-  bool linear_regression_;
+  int averaging_;
   rclcpp::Time sensor_base_;
   rclcpp::Time pc_base_;
 
@@ -51,11 +51,16 @@ public:
   static const char* timesync_averaging_name[NUM_TIMESYNC_AVERAGING];
 
   TimeSync();
-  void init(int period, int off_usec, bool linear_regression);
+  void init(int period, int off_usec, int averaging);
   void reset(double since);
   void update(uint64_t sensor_time_raw, unsigned req_duration, rclcpp::Time pc_time);
   bool valid(void);
   void raw_to_rclcpp(uint64_t raw, rclcpp::Time& cppt, rcl_clock_type_t clock_type);
   void sensor_to_pc(uint64_t raw, rclcpp::Time& cppt);
   long time_to_full_sensor_second(rclcpp::Time&);
+
+  static int timesync_method_name_to_int(std::string& value);
+  static int timesync_averaging_name_to_int(std::string& value);
+
+
 };

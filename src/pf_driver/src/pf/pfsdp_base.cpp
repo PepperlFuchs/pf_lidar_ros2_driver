@@ -446,32 +446,26 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     }
     else if (parameter.get_name() == "timesync_method")
     {
-      int i;
-      std::string value = parameter.as_string();
-      for (i=0; i<NUM_TIMESYNC_METHODS; ++i)
+      std::string tsval = parameter.as_string();
+      int i = TimeSync::timesync_method_name_to_int(tsval);
+      if (i>=0)
       {
-        if (value.compare(TimeSync::timesync_method_name[i]) == 0)
-        {
-          config_->timesync_method = i;
-        }
+        config_->timesync_method = i;
       }
-      if (i == NUM_TIMESYNC_METHODS)
+      else
       {
         successful = false;
       }
     }
     else if (parameter.get_name() == "timesync_averaging")
     {
-      int i;
-      std::string value = parameter.as_string();
-      for (i=0; i<NUM_TIMESYNC_AVERAGING; ++i)
+      std::string tsval = parameter.as_string();
+      int i = TimeSync::timesync_averaging_name_to_int(tsval);
+      if (i>=0)
       {
-        if (value.compare(TimeSync::timesync_averaging_name[i]) == 0)
-        {
-          config_->timesync_averaging = i;
-        }
+        config_->timesync_averaging = i;
       }
-      if (i == NUM_TIMESYNC_AVERAGING)
+      else
       {
         successful = false;
       }

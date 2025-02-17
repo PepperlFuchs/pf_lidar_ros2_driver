@@ -188,38 +188,20 @@ int main(int argc, char* argv[])
   config->watchdog = node->get_parameter("watchdog").get_parameter_value().get<bool>();
   RCLCPP_INFO(node->get_logger(), "start_angle: %d", config->start_angle);
 
+  std::string tsval = node->get_parameter("timesync_method").get_parameter_value().get<std::string>();
+  config->timesync_method = TimeSync::timesync_method_name_to_int(tsval);
+  if (config->timesync_method < 0)
   {
-    int i;
-    std::string value = node->get_parameter("timesync_method").get_parameter_value().get<std::string>();
-    for (i=0; i<NUM_TIMESYNC_METHODS; ++i)
-    {
-      if (value.compare(TimeSync::timesync_method_name[i]) == 0)
-      {
-        config->timesync_method = i;
-      }
-    }
-    if (i == NUM_TIMESYNC_METHODS)
-    {
-      RCLCPP_ERROR(node->get_logger(), "Invalid timesync_method");
-      return -1;
-    }
+    RCLCPP_ERROR(node->get_logger(), "Invalid timesync_method '%s'", tsval.c_str());
+    return -1;
   }
 
+  tsval = node->get_parameter("timesync_averaging").get_parameter_value().get<std::string>();
+  config->timesync_averaging = TimeSync::timesync_averaging_name_to_int(tsval);
+  if (config->timesync_averaging < 0)
   {
-    int i;
-    std::string value = node->get_parameter("timesync_averaging").get_parameter_value().get<std::string>();
-    for (i=0; i<NUM_TIMESYNC_AVERAGING; ++i)
-    {
-      if (value.compare(TimeSync::timesync_averaging_name[i]) == 0)
-      {
-        config->timesync_averaging = i;
-      }
-    }
-    if (i == NUM_TIMESYNC_AVERAGING)
-    {
-      RCLCPP_ERROR(node->get_logger(), "Invalid timesync_averaging");
-      return -1;
-    }
+    RCLCPP_ERROR(node->get_logger(), "Invalid timesync_averaging '%s'", tsval.c_str());
+    return -1;
   }
 
   config->timesync_interval = node->get_parameter("timesync_interval").get_parameter_value().get<int>();

@@ -5,7 +5,7 @@
 #include <cmath>
 
 TimeSync::TimeSync()
-  : sensor_base_(0), pc_base_(0), base_time_(0), scale_time_(0), period_(0), linear_regression_(false)
+  : sensor_base_(0), pc_base_(0), base_time_(0), scale_time_(0), period_(0), averaging_(0)
 {
 }
 
@@ -23,6 +23,30 @@ const char* TimeSync::timesync_averaging_name[NUM_TIMESYNC_AVERAGING] =
     "regression"
 };
 
+int TimeSync::timesync_method_name_to_int(std::string& value)
+{
+  for (int i=0; i<NUM_TIMESYNC_METHODS; ++i)
+  {
+    if (value.compare(TimeSync::timesync_method_name[i]) == 0)
+    {
+      return i;
+    }
+  }
+  return -1;
+}
+
+int TimeSync::timesync_averaging_name_to_int(std::string& value)
+{
+  for (int i=0; i<NUM_TIMESYNC_AVERAGING; ++i)
+  {
+    if (value.compare(TimeSync::timesync_averaging_name[i]) == 0)
+    {
+      return i;
+    }
+  }
+  return -1;
+}
+
 void TimeSync::reset(double since)
 {
   samples_.clear();
@@ -35,12 +59,12 @@ void TimeSync::reset(double since)
   RCLCPP_INFO(rclcpp::get_logger("timesync"), "reset %f", since);
 }
 
-void TimeSync::init(int period, int off_usec, bool linear_regression)
+void TimeSync::init(int period, int off_usec, int averaging)
 {
   reset(0.0);
   period_ = period;
   off_usec_ = 1.0E-6 * (double)off_usec;
-  linear_regression_ = linear_regression;
+  averaging_ = averaging_;
 }
 
 bool TimeSync::valid(void)
@@ -168,7 +192,7 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     double time_factor = 1.0;
     double base_time = 0.0;
 
-    if (linear_regression_)
+    if (averaging_ = TIMESYNC_AVERAGING_REGRESSION)
     {
       /* Linear regression */
 
