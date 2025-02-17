@@ -84,7 +84,7 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     return;
   }
 
-  if (samples_.size() > 0)
+  if (!samples_.empty())
   {
     /* Reset stats if there was a "large" jump in pc time, e.g. due to daylight savings?? */
     /* TBD: What is "large"? 15sec? 15min? */
@@ -101,7 +101,7 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
 
     raw_to_rclcpp(sensor_time_raw, sample.sensor_time, pc_time.get_clock_type());
 
-    if (samples_.size() > 0)
+    if (!samples_.empty())
     {
       double since_last_update = (sample.sensor_time - samples_.back().sensor_time).seconds();
 
@@ -129,15 +129,10 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     }
 
     /* Discard samples older than period_ */
-    while (samples_.size() > 0)
+    while (!samples_.empty() && ((sample.sensor_time - samples_.front().sensor_time).seconds()) > period_secs)
     {
-      double oldest_sample_age = (sample.sensor_time - samples_.front().sensor_time).seconds();
-
-      if (oldest_sample_age > period_secs)
-      {
-        sum_req_duration_us_ -= samples_.front().req_duration_us;
-        samples_.pop_front();
-      }
+      sum_req_duration_us_ -= samples_.front().req_duration_us;
+      samples_.pop_front();
     }
 
     /* Record new sample */
