@@ -157,11 +157,11 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     update_timesync(packet);
 
     rclcpp::Time first_acquired_point_stamp;
-    if (config_->timesync_method == TIMESYNC_METHOD_AVERAGE && params_->active_timesync.valid())
+    if (config_->timesync_method == TIMESYNC_METHOD_REQUESTS && params_->active_timesync.valid())
     {
       params_->active_timesync.sensor_to_pc(packet.header.timestamp_raw, first_acquired_point_stamp);
     }
-    else if (config_->timesync_method == TIMESYNC_METHOD_REQUESTS && params_->passive_timesync.valid())
+    else if (config_->timesync_method == TIMESYNC_METHOD_AVERAGE && params_->passive_timesync.valid())
     {
       params_->passive_timesync.sensor_to_pc(packet.header.timestamp_raw, first_acquired_point_stamp);
     }
