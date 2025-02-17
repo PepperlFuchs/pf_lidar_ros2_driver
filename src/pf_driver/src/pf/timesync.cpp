@@ -4,28 +4,17 @@
 
 #include <cmath>
 
-TimeSync::TimeSync()
-  : sensor_base_(0), pc_base_(0), base_time_(0), scale_time_(0), period_(0), averaging_(0)
+TimeSync::TimeSync() : sensor_base_(0), pc_base_(0), base_time_(0), scale_time_(0), period_(0), averaging_(0)
 {
 }
 
-const char* TimeSync::timesync_method_name[NUM_TIMESYNC_METHODS] =
-{
-    "off",
-    "simple",
-    "average",
-    "requests"
-};
+const char* TimeSync::timesync_method_name[NUM_TIMESYNC_METHODS] = { "off", "simple", "average", "requests" };
 
-const char* TimeSync::timesync_averaging_name[NUM_TIMESYNC_AVERAGING] =
-{
-    "mean",
-    "regression"
-};
+const char* TimeSync::timesync_averaging_name[NUM_TIMESYNC_AVERAGING] = { "mean", "regression" };
 
 int TimeSync::timesync_method_name_to_int(std::string& value)
 {
-  for (int i=0; i<NUM_TIMESYNC_METHODS; ++i)
+  for (int i = 0; i < NUM_TIMESYNC_METHODS; ++i)
   {
     if (value.compare(TimeSync::timesync_method_name[i]) == 0)
     {
@@ -37,7 +26,7 @@ int TimeSync::timesync_method_name_to_int(std::string& value)
 
 int TimeSync::timesync_averaging_name_to_int(std::string& value)
 {
-  for (int i=0; i<NUM_TIMESYNC_AVERAGING; ++i)
+  for (int i = 0; i < NUM_TIMESYNC_AVERAGING; ++i)
   {
     if (value.compare(TimeSync::timesync_averaging_name[i]) == 0)
     {

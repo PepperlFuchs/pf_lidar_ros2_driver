@@ -448,7 +448,7 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     {
       std::string tsval = parameter.as_string();
       int i = TimeSync::timesync_method_name_to_int(tsval);
-      if (i>=0)
+      if (i >= 0)
       {
         config_->timesync_method = i;
       }
@@ -461,7 +461,7 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     {
       std::string tsval = parameter.as_string();
       int i = TimeSync::timesync_averaging_name_to_int(tsval);
-      if (i>=0)
+      if (i >= 0)
       {
         config_->timesync_averaging = i;
       }
