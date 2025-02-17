@@ -2,6 +2,8 @@
 #include <iomanip>
 #include "pf_driver/pf/timesync.h"
 
+#include <cmath>
+
 TimeSync::TimeSync()
   : sensor_base_(0), pc_base_(0), base_time_(0), scale_time_(0), period_(0), linear_regression_(false)
 {
@@ -75,8 +77,6 @@ long TimeSync::time_to_full_sensor_second(rclcpp::Time& pc_time)
 
 void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp::Time pc_time)
 {
-  const int nominal_samples = (period_ == 0) ? 1 : 200;
-
   TimeSync_Sample sample;
 
   if (req_duration_us > 50000)
@@ -84,46 +84,67 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     return;
   }
 
+  if (samples_.size() > 0)
   {
+    /* Reset stats if there was a "large" jump in pc time, e.g. due to daylight savings?? */
+    /* TBD: What is "large"? 15sec? 15min? */
+
+    double since_last_update = (pc_time - samples_.back().pc_time).seconds();
+    if (fabs(since_last_update) > 15.0)
+    {
+      reset(since_last_update);
+    }
+  }
+
+  {
+    double period_secs = 0.001 * (double)period_;
+
     raw_to_rclcpp(sensor_time_raw, sample.sensor_time, pc_time.get_clock_type());
 
     if (samples_.size() > 0)
     {
       double since_last_update = (sample.sensor_time - samples_.back().sensor_time).seconds();
 
-      if (since_last_update > 1.0)
+      if (fabs(since_last_update) > 1.0)
       {
+        /* Reset stats if there was a long time since last packet, probably some kind of restart */
+
         reset(since_last_update);
       }
       else
       {
-        /* Rate limiting: Try to keep nominal_samples approximately evenly distributed over period */
-        // if (samples_.size() >= nominal_samples)
-        {
-          double min_interval = 0.1;
-          if (period_ > 0)
-          {
-            min_interval = (0.001 * (double)period_) / nominal_samples;
-          }
+        /* Do not blindly collect all samples, as that might cause the
+         * collection to grow very large if user configured to observe input
+         * over a long time at high scan rate.  Rather ignore new samples that
+         * come in at a higher rate than necessary to collect just 200 samples
+         * evenly distributed during the whole period.  TBD: 200 was chosen
+         * somewhat arbitrarily.
+         */
 
-          if (since_last_update < min_interval)
-          {
-            return;
-          }
+        if (since_last_update < period_secs / 200)
+        {
+          return;
         }
       }
     }
 
+    /* Discard samples older than period_ */
+    while (samples_.size() > 0)
+    {
+      double oldest_sample_age = (sample.sensor_time - samples_.front().sensor_time).seconds();
+
+      if (oldest_sample_age > period_secs)
+      {
+        sum_req_duration_us_ -= samples_.front().req_duration_us;
+        samples_.pop_front();
+      }
+    }
+
+    /* Record new sample */
     sample.req_duration_us = req_duration_us;
     sum_req_duration_us_ += req_duration_us;
     sample.pc_time = pc_time;
     samples_.push_back(sample);
-  }
-
-  if (samples_.size() > nominal_samples)
-  {
-    sum_req_duration_us_ -= samples_.front().req_duration_us;
-    samples_.pop_front();
   }
 
   /* Offsets to keep values small in calculation below */
