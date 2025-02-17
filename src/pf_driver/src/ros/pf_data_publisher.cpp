@@ -182,7 +182,8 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
       uint32_t nanoseconds = ((packet.header.timestamp_raw & 0xffffffffull) * 1000000000ull) >> 32;
 
       /* TBD: Construct rclcpp::Time with same clock_type as last_acquired_point_stamp for consistency? */
-      first_acquired_point_stamp = rclcpp::Time(seconds, nanoseconds, packet.last_acquired_point_stamp.get_clock_type());
+      first_acquired_point_stamp =
+          rclcpp::Time(seconds, nanoseconds, packet.last_acquired_point_stamp.get_clock_type());
     }
     msg_->header.stamp = first_acquired_point_stamp;
 

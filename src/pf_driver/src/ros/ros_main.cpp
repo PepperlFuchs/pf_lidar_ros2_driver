@@ -28,8 +28,8 @@ int main(int argc, char* argv[])
   bool watchdog = true; /* "true" means: use scanner default */
   bool apply_correction = false;
   int timesync_method = TIMESYNC_PACKET_AVERAGE; /* 0=none, 1=adhoc, 2=packet average, 3=poll averaged */
-  int timesync_interval = 250;      /* [ms] time between polls if metehod==3 */
-  int timesync_period = 10000;      /* [ms] period to collect time offsets for averaging */
+  int timesync_interval = 250;                   /* [ms] time between polls if metehod==3 */
+  int timesync_period = 10000;                   /* [ms] period to collect time offsets for averaging */
   int timesync_off_usec = 0;        /* [us] to be added to PC timestamp after conversion from sensor timestamp */
   bool timesync_regression = false; /* perform averaging(false) or linear regression(true) */
 
