@@ -157,15 +157,15 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     update_timesync(packet);
 
     rclcpp::Time first_acquired_point_stamp;
-    if (config_->timesync_interval > 0 && params_->active_timesync.valid())
+    if (config_->timesync_method == TIMESYNC_POLL_AVERAGE && params_->active_timesync.valid())
     {
       params_->active_timesync.sensor_to_pc(packet.header.timestamp_raw, first_acquired_point_stamp);
     }
-    else if (config_->timesync_period > 0 && params_->passive_timesync.valid())
+    else if (config_->timesync_method == TIMESYNC_PACKET_AVERAGE && params_->passive_timesync.valid())
     {
       params_->passive_timesync.sensor_to_pc(packet.header.timestamp_raw, first_acquired_point_stamp);
     }
-    else
+    else if (config_->timesync_method == TIMESYNC_ADHOC)
     {
       /* No averaging, just estimate acquisition time from most recent reception time */
       int points_to_end_of_packet = packet.header.first_index + packet.header.num_points_packet;
@@ -174,6 +174,15 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
                                   1000 * config_->timesync_off_usec);
 
       first_acquired_point_stamp = packet.last_acquired_point_stamp - time_for_measurement;
+    }
+    else /* config_->timesync_method == TIMESYNC_NONE) */
+    {
+      /* Hopefully the timestamp_raw never exceeds 0x7fffffff.ffffffff seconds */
+      int32_t seconds = (int32_t)((packet.header.timestamp_raw >> 32) & 0xfffffffful);
+      uint32_t nanoseconds = ((packet.header.timestamp_raw & 0xffffffffull) * 1000000000ull) >> 32;
+
+      /* TBD: Construct rclcpp::Time with same clock_type as last_acquired_point_stamp for consistency? */
+      first_acquired_point_stamp = rclcpp::Time(seconds, nanoseconds, packet.last_acquired_point_stamp.get_clock_type());
     }
     msg_->header.stamp = first_acquired_point_stamp;
 

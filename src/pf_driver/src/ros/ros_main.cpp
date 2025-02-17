@@ -27,9 +27,10 @@ int main(int argc, char* argv[])
   int skip_scans = 0;
   bool watchdog = true; /* "true" means: use scanner default */
   bool apply_correction = false;
-  int timesync_interval = 0;        /* ms or 0(off) */
-  int timesync_period = 0;          /* ms or 0(no averaging) */
-  int timesync_off_usec = 0;        /* us to be added to PC timestamp after conversion from sensor timestamp */
+  int timesync_method = TIMESYNC_PACKET_AVERAGE; /* 0=none, 1=adhoc, 2=packet average, 3=poll averaged */
+  int timesync_interval = 250;      /* [ms] time between polls if metehod==3 */
+  int timesync_period = 10000;      /* [ms] period to collect time offsets for averaging */
+  int timesync_off_usec = 0;        /* [us] to be added to PC timestamp after conversion from sensor timestamp */
   bool timesync_regression = false; /* perform averaging(false) or linear regression(true) */
 
   if (!node->has_parameter("device"))
@@ -87,6 +88,13 @@ int main(int argc, char* argv[])
   }
   node->get_parameter("watchdog", watchdog);
   RCLCPP_INFO(node->get_logger(), "watchdog: %d", watchdog);
+
+  if (!node->has_parameter("timesync_method"))
+  {
+    node->declare_parameter("timesync_method", timesync_method);
+  }
+  node->get_parameter("timesync_method", timesync_method);
+  RCLCPP_INFO(node->get_logger(), "timesync_method: %d", timesync_method);
 
   if (!node->has_parameter("timesync_interval"))
   {

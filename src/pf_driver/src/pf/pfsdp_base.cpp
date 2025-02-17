@@ -444,6 +444,10 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     {
       config_->watchdogtimeout = parameter.as_int();
     }
+    else if (parameter.get_name() == "timesync_method")
+    {
+      config_->timesync_method = parameter.as_int();
+    }
     else if (parameter.get_name() == "timesync_interval")
     {
       config_->timesync_interval = parameter.as_int();

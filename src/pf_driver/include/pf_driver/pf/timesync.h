@@ -18,6 +18,12 @@ struct TimeSync_Sample
   unsigned req_duration_us;
 };
 
+/* timesync_method */
+#define TIMESYNC_NONE 0
+#define TIMESYNC_ADHOC 1
+#define TIMESYNC_PACKET_AVERAGE 2
+#define TIMESYNC_POLL_AVERAGE 3
+
 class TimeSync
 {
 private:

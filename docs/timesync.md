@@ -2,15 +2,15 @@
 
 The timestamps in scan data are read from a independent clock in the sensor.
 
-In `feature/timesync` branch, two methods are implemented that can relate the
-sensor clock to ROS time momentarily. Further methods (e.g. with extra hardware
+In `feature/timesync` branch, four methods are implemented for conversion of 
+sensor timestamps into ROS timestamps.  Further methods (e.g. with extra hardware
 in place or support of a separate time server) may be added later.
 
 Used regularly, their results can be fed into a common algorithm to compute and
 update sensor time versus ROS time offset and linearity error.  With this
 information, all sensor timestamps can be converted into ROS timestamps.
 
-### Scan data packet reception time
+### Scan data packet evaluation time
 
 The sensor timestamp of the packets received from the sensor can be related to the
 ROS time when the packets are evaluated.
@@ -97,7 +97,7 @@ The list of recorded `TimeSync_Sample` is reset whenever a non-zero
 significant deviation from nominal `scan_frequency` or other problems. Also an
 update later than one second after the previous one would cause a reset (for
 details see `timesync.cpp`). In general, the time span covered by the
-collected samples can be configued in driver parameter `timesync_period`.
+collected samples can be configured in driver parameter `timesync_period`.
 
 
 
@@ -122,20 +122,26 @@ duration of the measurements in the packet, not a whole scan.
 
 ### Usage
 
-Set node parameter `timesync_interval` to some non-zero milliseconds value if
-extra HTTP requests for sensor time shall be made. The node will perform those
-request regularly each time the interval passed. Otherwise, the packet
-evaluation time is used to determine the timestamp relation.
+Select a method to compute a ROS timestamp from sensor timestamp by setting
+`timesync_method` to one of the following values (defaults to 2 if not set):
+
+ - 0 (sensor time is converted without adding any offset, not conformant to `msgs/LaserScan` spec)
+ - 1 (ROS timestamp is set to packet evalution ROS time minus packet duration)
+ - 2 (ROS timestamp is set to sensor timestamp plus offset to ROS time, computed from packet evaluation times)
+ - 3 (ROS timestamp is set to sensor timestamp plus offset to ROS time, determined with HTTP requests to sensor)
+
+The node parameter `timesync_interval` determines the interval (in milliseconds)
+between requests made for sensor time if `timesync_method` is 3.
 
 The parameter `timesync_period` determines the period of time over which data
-is kept for averaging and `timesync_regression` may be set to `true` if 
+is kept for averaging, and `timesync_regression` may be set to `true` if 
 linear regression is preferred over simple averaging for computing the ROS
 time from sensor time.
 
-Finally, `timestamp_off_usec` allows to specify a fixed duration (in microseconds)
+Additionally, `timestamp_off_usec` allows to specify a fixed duration (in microseconds)
 which will be added to the PC time computed from sensor time, to compensate for
 a known extra offset between computed and actual time. When using the packet
-reception timestamps (`timesync_interval=0`) for estimation, you typically have
+evaluation timestamps (`timesync_method=2`) for estimation, you typically have
 to compensate for a time that is a little behind (larger) with a negative
 value, e.g. -3000.  When using extra HTTP requests, the computed time instead
 appears to be ahead of the actual time so the value typically must be positive,
@@ -143,29 +149,35 @@ e.g. 10000, often dependent on the load caused by current amount of data to
 handle (scan frequency X scan size).
 
 Typical setups are described below. The currently recommended setup is to leave
-both parameters at 0 if timestamp accuracy and jitter is not a concern,
-otherwise `transport udp`, `timesync_interval 0` and `timesync_period 10000`.
+`timesync_method` at its default (2), choose `transport udp` and `timesync_period 10000`.
 
 Feedback is welcome!
 
+#### Method 0: No conversion
 
-#### No averaging
+The timestamp from sensor is just numerically converted into ROS time. That is,
+for example, if the sensor was just powered on, you'd expect just a few seconds
+here. This does not conform to the `msgs/LaserScan` specification and therefore
+should be chosen only if you only do your own custom processing of the messages.
 
-Just set timestamp in ROS LaserScan to reception time of first scan packet
+    timesync_method:   0
+
+#### Method 1: Just packet evaluation time, no averaging
+
+Just set timestamp in ROS LaserScan to evaluation time of first scan packet
 minus the time needed to measure the points contained in that packet, so it
 is somewhat near the moment when the first point was acquired.
 
-Uncertainties: All delays and jitter described in "Scan data packet reception
+Uncertainties: All delays and jitter described in "Scan data packet evalution
 time" directly affect the timestamp in output. Expect several milliseconds of
 jitter in the resulting LaserScan timestamps.
 
-    timesync_interval: 0
-    timesync_period:   0
+    timesync_method:   1
     timesync_off_usec: 0
 
-#### Smoothed from packet reception time
+#### Method 2: Smoothed from packet evaluation time
 
-The packet reception time vs. sensor time information is collected and used to
+The packet evaluation time vs. sensor time information is collected and used to
 compute average offset and slope of PC time compared to sensor time. The result
 is used to convert timestamps from sensor to ROS time.
 
@@ -180,11 +192,11 @@ a given setup, in a range of only a few milliseconds, but in theory, if there
 was some network device delaying the transmission or some time consuming
 processing before each evaluation, the driver can't notice.
 
-    timesync_interval: 0
+    timesync_method:   2
     timesync_period:   10000
     timesync_off_usec: -3000
 
-#### Smoothed from extra HTTP requests for `system_time_raw`
+#### Method 3: Smoothed from extra HTTP requests for `system_time_raw`
 
 Making extra HTTP requests to the sensor for `system_time_raw` every
 `timesync_interval` milliseconds, this is another way to acquire input for
@@ -198,6 +210,7 @@ especially at high sample rates, and increase risk of gaps in scan data.
 
 Note that `timesync_period` must be larger than `timesync_interval`.
 
+    timesync_method:   3
     timesync_interval: 250
     timesync_period:   10000
     timesync_off_usec: 7000

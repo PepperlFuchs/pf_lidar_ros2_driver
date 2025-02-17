@@ -193,7 +193,7 @@ bool PFInterface::start_transmission(std::shared_ptr<std::mutex> net_mtx,
     }
     start_watchdog_timer(timeout_s);
   }
-  if (config_->timesync_interval != 0)
+  if (config_->timesync_method == TIMESYNC_POLL_AVERAGE)
   {
     start_timesync_timer(config_->timesync_interval);
   }
@@ -216,13 +216,15 @@ void PFInterface::terminate()
   if (!pipeline_)
     return;
 
-  if (config_->watchdog)
+  if (watchdog_timer_)
   {
     watchdog_timer_->cancel();
+    watchdog_timer_ = rclcpp::TimerBase::SharedPtr();
   }
-  if (config_->timesync_interval != 0)
+  if (timesync_timer_)
   {
     timesync_timer_->cancel();
+    timesync_timer_ = rclcpp::TimerBase::SharedPtr();
   }
 
   pipeline_->terminate();
