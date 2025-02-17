@@ -19,10 +19,16 @@ struct TimeSync_Sample
 };
 
 /* timesync_method */
-#define TIMESYNC_NONE 0
-#define TIMESYNC_ADHOC 1
-#define TIMESYNC_PACKET_AVERAGE 2
-#define TIMESYNC_POLL_AVERAGE 3
+#define NUM_TIMESYNC_METHODS 4
+#define TIMESYNC_METHOD_OFF         0
+#define TIMESYNC_METHOD_SIMPLE      1
+#define TIMESYNC_METHOD_AVERAGE     2
+#define TIMESYNC_METHOD_REQUESTS    3
+
+/* timesync_averaging */
+#define NUM_TIMESYNC_AVERAGING 2
+#define TIMESYNC_AVERAGING_MEAN       0
+#define TIMESYNC_AVERAGING_REGRESSION 1
 
 class TimeSync
 {
@@ -41,6 +47,9 @@ private:
   std::mutex access_;
 
 public:
+  static const char* timesync_method_name[NUM_TIMESYNC_METHODS];
+  static const char* timesync_averaging_name[NUM_TIMESYNC_AVERAGING];
+
   TimeSync();
   void init(int period, int off_usec, bool linear_regression);
   void reset(double since);

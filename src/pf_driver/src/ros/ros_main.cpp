@@ -27,11 +27,11 @@ int main(int argc, char* argv[])
   int skip_scans = 0;
   bool watchdog = true; /* "true" means: use scanner default */
   bool apply_correction = false;
-  int timesync_method = TIMESYNC_PACKET_AVERAGE; /* 0=none, 1=adhoc, 2=packet average, 3=poll averaged */
-  int timesync_interval = 250;                   /* [ms] time between polls if metehod==3 */
-  int timesync_period = 10000;                   /* [ms] period to collect time offsets for averaging */
-  int timesync_off_usec = 0;        /* [us] to be added to PC timestamp after conversion from sensor timestamp */
-  bool timesync_regression = false; /* perform averaging(false) or linear regression(true) */
+  std::string timesync_method("average"); /* "none", "simple" (ad hoc), "average", or "requests" (using HTTP) */
+  std::string timesync_averaging("mean"); /* perform averaging with arithmetic mean or linear regression */
+  int timesync_interval = 250;            /* [ms] time between polls if method=="requests" */
+  int timesync_period = 10000;            /* [ms] period to collect time offsets for averaging */
+  int timesync_offset_usec = 0;           /* [us] to be added to PC timestamp after conversion from sensor timestamp */
 
   if (!node->has_parameter("device"))
   {
@@ -94,7 +94,14 @@ int main(int argc, char* argv[])
     node->declare_parameter("timesync_method", timesync_method);
   }
   node->get_parameter("timesync_method", timesync_method);
-  RCLCPP_INFO(node->get_logger(), "timesync_method: %d", timesync_method);
+  RCLCPP_INFO(node->get_logger(), "timesync_method: %s", timesync_method.c_str());
+
+  if (!node->has_parameter("timesync_averaging"))
+  {
+    node->declare_parameter("timesync_averaging", timesync_averaging);
+  }
+  node->get_parameter("timesync_averaging", timesync_averaging);
+  RCLCPP_INFO(node->get_logger(), "timesync_averaging: %s", timesync_averaging.c_str());
 
   if (!node->has_parameter("timesync_interval"))
   {
@@ -110,19 +117,12 @@ int main(int argc, char* argv[])
   node->get_parameter("timesync_period", timesync_period);
   RCLCPP_INFO(node->get_logger(), "timesync_period: %d", timesync_period);
 
-  if (!node->has_parameter("timesync_off_usec"))
+  if (!node->has_parameter("timesync_offset_usec"))
   {
-    node->declare_parameter("timesync_off_usec", timesync_off_usec);
+    node->declare_parameter("timesync_offset_usec", timesync_offset_usec);
   }
-  node->get_parameter("timesync_off_usec", timesync_off_usec);
-  RCLCPP_INFO(node->get_logger(), "timesync_off_usec: %d", timesync_off_usec);
-
-  if (!node->has_parameter("timesync_regression"))
-  {
-    node->declare_parameter("timesync_regression", timesync_regression);
-  }
-  node->get_parameter("timesync_regression", timesync_regression);
-  RCLCPP_INFO(node->get_logger(), "timesync_regression: %s", timesync_regression ? "yes" : "no");
+  node->get_parameter("timesync_offset_usec", timesync_offset_usec);
+  RCLCPP_INFO(node->get_logger(), "timesync_offset_usec: %d", timesync_offset_usec);
 
   if (!node->has_parameter("scan_topic"))
   {
@@ -187,11 +187,44 @@ int main(int argc, char* argv[])
   config->watchdogtimeout = node->get_parameter("watchdogtimeout").get_parameter_value().get<int>();
   config->watchdog = node->get_parameter("watchdog").get_parameter_value().get<bool>();
   RCLCPP_INFO(node->get_logger(), "start_angle: %d", config->start_angle);
-  config->timesync_method = node->get_parameter("timesync_method").get_parameter_value().get<int>();
+
+  {
+    int i;
+    std::string value = node->get_parameter("timesync_method").get_parameter_value().get<std::string>();
+    for (i=0; i<NUM_TIMESYNC_METHODS; ++i)
+    {
+      if (value.compare(TimeSync::timesync_method_name[i]) == 0)
+      {
+        config->timesync_method = i;
+      }
+    }
+    if (i == NUM_TIMESYNC_METHODS)
+    {
+      RCLCPP_ERROR(node->get_logger(), "Invalid timesync_method");
+      return -1;
+    }
+  }
+
+  {
+    int i;
+    std::string value = node->get_parameter("timesync_averaging").get_parameter_value().get<std::string>();
+    for (i=0; i<NUM_TIMESYNC_AVERAGING; ++i)
+    {
+      if (value.compare(TimeSync::timesync_averaging_name[i]) == 0)
+      {
+        config->timesync_averaging = i;
+      }
+    }
+    if (i == NUM_TIMESYNC_AVERAGING)
+    {
+      RCLCPP_ERROR(node->get_logger(), "Invalid timesync_averaging");
+      return -1;
+    }
+  }
+
   config->timesync_interval = node->get_parameter("timesync_interval").get_parameter_value().get<int>();
   config->timesync_period = node->get_parameter("timesync_period").get_parameter_value().get<int>();
-  config->timesync_off_usec = node->get_parameter("timesync_off_usec").get_parameter_value().get<int>();
-  config->timesync_regression = node->get_parameter("timesync_regression").get_parameter_value().get<bool>();
+  config->timesync_offset_usec = node->get_parameter("timesync_offset_usec").get_parameter_value().get<int>();
 
   std::shared_ptr<ScanParameters> params = std::make_shared<ScanParameters>();
   params->apply_correction = node->get_parameter("apply_correction").get_parameter_value().get<bool>();

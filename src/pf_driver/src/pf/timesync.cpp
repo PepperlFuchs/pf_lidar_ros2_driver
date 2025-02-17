@@ -9,6 +9,20 @@ TimeSync::TimeSync()
 {
 }
 
+const char* TimeSync::timesync_method_name[NUM_TIMESYNC_METHODS] =
+{
+    "off",
+    "simple",
+    "average",
+    "requests"
+};
+
+const char* TimeSync::timesync_averaging_name[NUM_TIMESYNC_AVERAGING] =
+{
+    "mean",
+    "regression"
+};
+
 void TimeSync::reset(double since)
 {
   samples_.clear();

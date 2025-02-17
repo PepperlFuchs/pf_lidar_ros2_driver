@@ -446,7 +446,35 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     }
     else if (parameter.get_name() == "timesync_method")
     {
-      config_->timesync_method = parameter.as_int();
+      int i;
+      std::string value = parameter.as_string();
+      for (i=0; i<NUM_TIMESYNC_METHODS; ++i)
+      {
+        if (value.compare(TimeSync::timesync_method_name[i]) == 0)
+        {
+          config_->timesync_method = i;
+        }
+      }
+      if (i == NUM_TIMESYNC_METHODS)
+      {
+        successful = false;
+      }
+    }
+    else if (parameter.get_name() == "timesync_averaging")
+    {
+      int i;
+      std::string value = parameter.as_string();
+      for (i=0; i<NUM_TIMESYNC_AVERAGING; ++i)
+      {
+        if (value.compare(TimeSync::timesync_averaging_name[i]) == 0)
+        {
+          config_->timesync_averaging = i;
+        }
+      }
+      if (i == NUM_TIMESYNC_AVERAGING)
+      {
+        successful = false;
+      }
     }
     else if (parameter.get_name() == "timesync_interval")
     {
@@ -456,13 +484,9 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     {
       config_->timesync_period = parameter.as_int();
     }
-    else if (parameter.get_name() == "timesync_off_usec")
+    else if (parameter.get_name() == "timesync_offset_usec")
     {
-      config_->timesync_off_usec = parameter.as_int();
-    }
-    else if (parameter.get_name() == "timesync_regression")
-    {
-      config_->timesync_regression = parameter.as_bool();
+      config_->timesync_offset_usec = parameter.as_int();
     }
     else if (parameter.get_name() == "start_angle")
     {

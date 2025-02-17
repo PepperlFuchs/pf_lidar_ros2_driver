@@ -22,8 +22,8 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
   info_ = info;
   params_ = params;
 
-  params_->active_timesync.init(config_->timesync_period, config_->timesync_off_usec, config_->timesync_regression);
-  params_->passive_timesync.init(config_->timesync_period, config_->timesync_off_usec, config_->timesync_regression);
+  params_->active_timesync.init(config_->timesync_period, config_->timesync_offset_usec, (config_->timesync_averaging == TIMESYNC_AVERAGING_REGRESSION));
+  params_->passive_timesync.init(config_->timesync_period, config_->timesync_offset_usec, (config_->timesync_averaging == TIMESYNC_AVERAGING_REGRESSION));
 
   topic_ = topic;
   frame_id_ = frame_id;
@@ -193,7 +193,7 @@ bool PFInterface::start_transmission(std::shared_ptr<std::mutex> net_mtx,
     }
     start_watchdog_timer(timeout_s);
   }
-  if (config_->timesync_method == TIMESYNC_POLL_AVERAGE)
+  if (config_->timesync_method == TIMESYNC_METHOD_REQUESTS)
   {
     start_timesync_timer(config_->timesync_interval);
   }

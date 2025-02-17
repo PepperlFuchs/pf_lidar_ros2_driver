@@ -13,9 +13,9 @@ struct ScanConfig
   uint port = 0;
   uint timesync_interval = 0;
   int timesync_method = 0;
+  int timesync_averaging = 0;
   int timesync_period = 0;
-  int timesync_off_usec = 0;
-  bool timesync_regression = false;
+  int timesync_offset_usec = 0;
 
   // void print()
   // {
