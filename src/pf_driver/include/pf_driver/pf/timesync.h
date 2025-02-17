@@ -20,14 +20,14 @@ struct TimeSync_Sample
 
 /* timesync_method */
 #define NUM_TIMESYNC_METHODS 4
-#define TIMESYNC_METHOD_OFF         0
-#define TIMESYNC_METHOD_SIMPLE      1
-#define TIMESYNC_METHOD_AVERAGE     2
-#define TIMESYNC_METHOD_REQUESTS    3
+#define TIMESYNC_METHOD_OFF 0
+#define TIMESYNC_METHOD_SIMPLE 1
+#define TIMESYNC_METHOD_AVERAGE 2
+#define TIMESYNC_METHOD_REQUESTS 3
 
 /* timesync_averaging */
 #define NUM_TIMESYNC_AVERAGING 2
-#define TIMESYNC_AVERAGING_MEAN       0
+#define TIMESYNC_AVERAGING_MEAN 0
 #define TIMESYNC_AVERAGING_REGRESSION 1
 
 class TimeSync
@@ -61,6 +61,4 @@ public:
 
   static int timesync_method_name_to_int(std::string& value);
   static int timesync_averaging_name_to_int(std::string& value);
-
-
 };
