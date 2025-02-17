@@ -187,6 +187,7 @@ int main(int argc, char* argv[])
   config->watchdogtimeout = node->get_parameter("watchdogtimeout").get_parameter_value().get<int>();
   config->watchdog = node->get_parameter("watchdog").get_parameter_value().get<bool>();
   RCLCPP_INFO(node->get_logger(), "start_angle: %d", config->start_angle);
+  config->timesync_method = node->get_parameter("timesync_method").get_parameter_value().get<int>();
   config->timesync_interval = node->get_parameter("timesync_interval").get_parameter_value().get<int>();
   config->timesync_period = node->get_parameter("timesync_period").get_parameter_value().get<int>();
   config->timesync_off_usec = node->get_parameter("timesync_off_usec").get_parameter_value().get<int>();
