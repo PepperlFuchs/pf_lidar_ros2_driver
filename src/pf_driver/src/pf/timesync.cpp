@@ -4,6 +4,71 @@
 
 #include <cmath>
 
+/* Sensor to ROS time synchronization in PF driver
+
+Class `TimeSync` (in `src/pf_driver/src/pf/timesync.cpp` and `src/pf_driver/include/pf/timesync.h`)
+holds an array of `TimeSync_Sample`, each relating a particular `pc_time` to a `sensor_time` timestamp.
+
+New timestamp pairs can be fed into an instance of `TimeSync` by calling its `update()` method. Using
+the samples collected in this array, coefficients are computed for conversion between sensor timestamps
+and PC timestamps, either using just averaging the offset and slope or using linear regression
+(determined by driver parameter `timesync_regression`).
+
+The class method `sensor_to_rclcpp()` is meant for conversion of sensor to ROS timestamps, using
+these coefficients.
+
+There are currently two instances of `TimeSync`.
+
+The first, `passive_timesync` is updated each time when a scan data packet is
+evaluated, using the sensor timestamp in the packet and the ROS time when
+evaluation starts.  At that time of evaluation, an unknown duration has passed
+since physical reception. The update frequency currently is determined
+implicitly by the rate of scan data packets and a hardcoded upper limit of 10
+Hz (packets within 100 ms after an update are ignored).
+
+The second instance of `TimeSync`, `active_timesync`, is fed from a timer callback
+that is set up in `pf_interface` to regularly trigger HTTP requests for sensor time
+ and update the `TimeSync` instance with the results. Its frequency is
+determined by the `timesync_interval` driver parameter (milliseconds). If the
+request took longer than 50 ms, the result is ignored.
+
+For ease of implementation, those `TimeSync` instances are part of the
+`params_` `ScanParameter` object, because this object is within reach for both
+the PF interface timer callback and during packet evaluation, although they
+strictly aren't parameters but dynamic state.
+
+The list of recorded `TimeSync_Sample` is reset whenever a non-zero
+`scan_status` in a packet header is seen, indicating a change in sample rate, a
+significant deviation from nominal `scan_frequency` or other problems. Also an
+update later than one second after the previous one would cause a reset, or a
+difference of more than 15s between current and previous ROS time. In general,
+the time span covered by the collected samples can be configured in driver
+parameter `timesync_period`.
+
+### Changes to previous implementation
+
+In short, previously, the driver put the time of evaluation of the first
+packet of a scan into LaserScan.header.stamp.
+
+Now it represents the time when the first sample was taken. It is converted
+from sensor time into ROS time using offset and coefficient computed from
+data obtained during preceding observation of the time relationship.
+
+More precisely, in previous driver versions, the LaserScan `header.stamp` was
+set to the `rclcpp::Clock().now() - scan_time` at the time when the first
+contributing packet was parsed. Before `bugfix/laserscan-metadata`, the
+`scan_time` was mistakenly always zero so effectively this represented the time
+when the first packet of the scan was received (ie. a packet length later than
+when the first sample of the first packet was taken). After
+`bugfix/laserscan-metadata`, it becomes more complicated, because `scan_time`
+is calculated correctly but the actual time correction should have been the
+duration of the measurements in the packet, not a whole scan.
+
+
+
+*/
+
+
 TimeSync::TimeSync() : sensor_base_(0), pc_base_(0), base_time_(0), scale_time_(0), period_(0), averaging_(0)
 {
 }

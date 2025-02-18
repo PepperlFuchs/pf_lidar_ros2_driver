@@ -1,14 +1,14 @@
 ## Time synchronization
 
-The timestamps in scan data are read from a independent clock in the sensor.
+The timestamps in scan data are read from a clock in the sensor, independent of
+ROS time. For output of scan data as ROS topics, the timestamps need to be
+converted into ROS timestamps.
 
-In `feature/timesync` branch, four methods are implemented for conversion of 
-sensor timestamps into ROS timestamps.  Further methods (e.g. with extra hardware
-in place or support of a separate time server) may be added later.
+The information required for this conversion can be gathered from different
+sources, described in the following sections.  Used regularly, their results
+can be fed into a common algorithm to compute and update sensor time versus ROS
+time offset and linearity error.
 
-Used regularly, their results can be fed into a common algorithm to compute and
-update sensor time versus ROS time offset and linearity error.  With this
-information, all sensor timestamps can be converted into ROS timestamps.
 
 ### Scan data packet evaluation time
 
@@ -55,114 +55,69 @@ that was current at the time when the reported `timestamp_raw` was read on the s
 However, the duration of the request can be rather long (ie. tens of milliseconds) and it is a
 little uncertain when the clock was read within the time frame - more towards the beginning or end?
 
+
 ### Common time
 
 The sensor and ROS could synchronize their time to a common time source. The R2000 and R2300 yet
 do not support such synchronization.
 
-### Implementation in PF driver
 
-Class `TimeSync` (in `src/pf_driver/src/pf/timesync.cpp` and `src/pf_driver/include/pf/timesync.h`)
-holds an array of `TimeSync_Sample`, each relating a particular `pc_time` to a `sensor_time` timestamp.
+### PPS (pulses per second)
 
-New timestamp pairs can be fed into an instance of `TimeSync` by calling its `update()` method. Using
-the samples collected in this array, coefficients are computed for conversion between sensor timestamps
-and PC timestamps, either using just averaging the offset and slope or using linear regression
-(determined by driver parameter `timesync_regression`).
-
-The class method `sensor_to_rclcpp()` is meant for conversion of sensor to ROS timestamps, using
-these coefficients.
-
-There are currently two instances of `TimeSync`.
-
-The first, `passive_timesync` is updated each time when a scan data packet is
-evaluated, using the sensor timestamp in the packet and the ROS time when
-evaluation starts.  At that time of evaluation, an unknown duration has passed
-since physical reception. The update frequency currently is determined
-implicitly by the rate of scan data packets and a hardcoded upper limit of 10
-Hz (packets within 100 ms after an update are ignored).
-
-The second instance of `TimeSync`, `active_timesync`, is fed from a timer callback
-that is set up in `pf_interface` to regularly trigger HTTP requests for sensor time
- and update the `TimeSync` instance with the results. Its frequency is
-determined by the `timesync_interval` driver parameter (milliseconds). If the
-request took longer than 50 ms, the result is ignored.
-
-For ease of implementation, those `TimeSync` instances are part of the `params_` `ScanParameter` object,
-because this object is within reach for both the PF interface timer callback and during packet evaluation,
-although they strictly aren't parameters but dynamic state.
-
-The list of recorded `TimeSync_Sample` is reset whenever a non-zero
-`scan_status` in a packet header is seen, indicating a change in sample rate, a
-significant deviation from nominal `scan_frequency` or other problems. Also an
-update later than one second after the previous one would cause a reset (for
-details see `timesync.cpp`). In general, the time span covered by the
-collected samples can be configured in driver parameter `timesync_period`.
+R2000 can be configured to generate a pulse on a switching output related to
+its internal time, e.g. whenever its internal clock reaches a full second.
+Knowing exactly at which ROS time the full sensor time second is reached can
+help to improve the accuracy of the offset that has been determined with other
+methods.  The ROS driver might get support for this in the future, e.g. with
+sensor output connected to a GPIO or serial (RS232) control line input, but
+currently this is not possible.
 
 
-
-### Changes to previous implementation
-
-In short, previously, the driver put the time of evaluation of the first
-packet of a scan into LaserScan.header.stamp.
-
-Now it represents the time when the first sample was taken. It is converted
-from sensor time into ROS time using offset and coefficient computed from
-data obtained during preceding observation of the time relationship.
-
-More precisely, in previous driver versions, the LaserScan `header.stamp` was
-set to the `rclcpp::Clock().now() - scan_time` at the time when the first
-contributing packet was parsed. Before `bugfix/laserscan-metadata`, the
-`scan_time` was mistakenly always zero so effectively this represented the time
-when the first packet of the scan was received (ie. a packet length later than
-when the first sample of the first packet was taken). After
-`bugfix/laserscan-metadata`, it becomes more complicated, because `scan_time`
-is calculated correctly but the actual time correction should have been the
-duration of the measurements in the packet, not a whole scan.
-
-### Usage
+## Usage
 
 Select a method to compute a ROS timestamp from sensor timestamp by setting
-`timesync_method` to one of the following values (defaults to 2 if not set):
+`timesync_method` to one of the following values (defaults to 'average' if not set):
 
- - 0 (sensor time is converted without adding any offset, not conformant to `msgs/LaserScan` spec)
- - 1 (ROS timestamp is set to packet evalution ROS time minus packet duration)
- - 2 (ROS timestamp is set to sensor timestamp plus offset to ROS time, computed from packet evaluation times)
- - 3 (ROS timestamp is set to sensor timestamp plus offset to ROS time, determined with HTTP requests to sensor)
+ - `off` (sensor time is converted without adding any offset, not conformant to `msgs/LaserScan` spec)
+ - `simple` (ROS timestamp is set to packet evalution ROS time minus packet duration)
+ - `average` (ROS timestamp is set to sensor timestamp plus offset to ROS time, computed from packet evaluation times)
+ - `requests` (ROS timestamp is set to sensor timestamp plus offset to ROS time, determined with HTTP requests to sensor)
 
 The node parameter `timesync_interval` determines the interval (in milliseconds)
-between requests made for sensor time if `timesync_method` is 3.
+between requests made for sensor time if `timesync_method` is `requests`.
 
-The parameter `timesync_period` determines the period of time over which data
-is kept for averaging, and `timesync_regression` may be set to `true` if 
-linear regression is preferred over simple averaging for computing the ROS
-time from sensor time.
+The parameter `timesync_period` (in milliseconds) determines the period of time
+over which data is recorded for averaging.
 
-Additionally, `timestamp_off_usec` allows to specify a fixed duration (in microseconds)
+Additionally, `timestamp_offset_usec` allows to specify a fixed duration (in microseconds)
 which will be added to the PC time computed from sensor time, to compensate for
-a known extra offset between computed and actual time. When using the packet
-evaluation timestamps (`timesync_method=2`) for estimation, you typically have
-to compensate for a time that is a little behind (larger) with a negative
-value, e.g. -3000.  When using extra HTTP requests, the computed time instead
-appears to be ahead of the actual time so the value typically must be positive,
-e.g. 10000, often dependent on the load caused by current amount of data to
-handle (scan frequency X scan size).
+a known extra offset between computed and actual time.
+
+When using the packet evaluation timestamps (`timesync_method: average`) for
+estimation, you typically have to compensate for a time that is a little behind
+(larger) with a negative value, e.g. -3000.  When using extra HTTP requests,
+the computed time instead appears to be ahead of the actual time so the value
+typically must be positive, e.g. 10000, often dependent on the load caused by
+current amount of data to handle (scan frequency X scan size).
 
 Typical setups are described below. The currently recommended setup is to leave
-`timesync_method` at its default (2), choose `transport udp` and `timesync_period 10000`.
+`timesync_method` at its default (`average`), choose `transport: udp` and
+`timesync_period: 10000`.
 
 Feedback is welcome!
+ 
 
-#### Method 0: No conversion
+#### Method 'off': No conversion
 
 The timestamp from sensor is just numerically converted into ROS time. That is,
 for example, if the sensor was just powered on, you'd expect just a few seconds
 here. This does not conform to the `msgs/LaserScan` specification and therefore
 should be chosen only if you only do your own custom processing of the messages.
 
-    timesync_method:   0
+    timesync_method:   "off"
 
-#### Method 1: Just packet evaluation time, no averaging
+
+#### Method 'simple': Just packet evaluation time, no averaging
 
 Just set timestamp in ROS LaserScan to evaluation time of first scan packet
 minus the time needed to measure the points contained in that packet, so it
@@ -172,10 +127,11 @@ Uncertainties: All delays and jitter described in "Scan data packet evalution
 time" directly affect the timestamp in output. Expect several milliseconds of
 jitter in the resulting LaserScan timestamps.
 
-    timesync_method:   1
-    timesync_off_usec: 0
+    timesync_method:   "simple"
+    timesync_offset_usec: 0
 
-#### Method 2: Smoothed from packet evaluation time
+
+#### Method 'average': Smoothed from packet evaluation time
 
 The packet evaluation time vs. sensor time information is collected and used to
 compute average offset and slope of PC time compared to sensor time. The result
@@ -184,7 +140,7 @@ is used to convert timestamps from sensor to ROS time.
 Pro: This gives much more consistent and stable timestamps in the LaserScan
 output header with less jitter. 3ms of stable latency can be compensated for by
 decrementing the PC time computed from sensor time by this amount (adding a
-negative `timesync_off_usec`).
+negative `timesync_offset_usec`).
 
 Uncertainty: The average latency from sensor to evaluation on PC is not known
 and thus cannot be accounted for automatically. It probably is quite stable for
@@ -192,28 +148,30 @@ a given setup, in a range of only a few milliseconds, but in theory, if there
 was some network device delaying the transmission or some time consuming
 processing before each evaluation, the driver can't notice.
 
-    timesync_method:   2
+    timesync_method:   "average"
     timesync_period:   10000
-    timesync_off_usec: -3000
+    timesync_offset_usec: -3000
 
-#### Method 3: Smoothed from extra HTTP requests for `system_time_raw`
+
+#### Method 'requests': Smoothed from extra HTTP requests for `system_time_raw`
 
 Making extra HTTP requests to the sensor for `system_time_raw` every
 `timesync_interval` milliseconds, this is another way to acquire input for
 computing sensor time vs. PC time offset and slope.
 
-Pro: The time for making the request and receiving the answer is a known upper
-bound for possible error in computed time offset.
+Pro: The duration from sending the request until the answer is received 
+from the sensor is a known upper bound for possible error in computed time
+offset.
 
 Con: This needs extra communication which might be a burden to the sensor 
 especially at high sample rates, and increase risk of gaps in scan data.
 
 Note that `timesync_period` must be larger than `timesync_interval`.
 
-    timesync_method:   3
+    timesync_method:   "requests"
     timesync_interval: 250
     timesync_period:   10000
-    timesync_off_usec: 7000
+    timesync_offset_usec: 7000
 
 
 ### Caveats
@@ -223,5 +181,15 @@ angular resolution are changed. Immediately after such changes, the ROS
 timestamps in scan data should be taken with care, while conversion coefficient
 and offset are still settling.
 
-The current implementation is not prepared for jumps in ROS time. It probably
-should attach a Clock callback to reset the recorded data in such situations.
+Jumps in ROS time larger than 15s, e.g. due to changes in daylight savings,
+also will cause the driver to reset the recorded data, as will jumps in sensor
+time that exceed 1s.
+
+
+### Changes to previous driver versions
+
+Previous driver versions supported only the 'simple' method and no finetuning.
+Latest versions were out by as much as one scan duration when estimating the
+timestamp of the acquisition of the first point.
+
+
