@@ -68,7 +68,6 @@ duration of the measurements in the packet, not a whole scan.
 
 */
 
-
 TimeSync::TimeSync() : sensor_base_(0), pc_base_(0), base_time_(0), scale_time_(0), period_(0), averaging_(0)
 {
 }
