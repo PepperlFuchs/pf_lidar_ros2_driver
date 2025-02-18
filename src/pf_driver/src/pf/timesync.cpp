@@ -109,7 +109,7 @@ void TimeSync::reset(double since)
   scale_time_ = 0.0; /* implicit + 1.0 */
   sum_req_duration_us_ = 0;
 
-  RCLCPP_INFO(rclcpp::get_logger("timesync"), "reset %f", since);
+  RCLCPP_DEBUG(rclcpp::get_logger("timesync"), "reset %f", since);
 }
 
 void TimeSync::init(int period, int off_usec, int averaging)
@@ -149,7 +149,7 @@ void TimeSync::sensor_to_pc(uint64_t sensor_time_raw, rclcpp::Time& pc_time)
     pc_time = pc_base_ + rclcpp::Duration(conv_time);
   }
 
-  RCLCPP_INFO(rclcpp::get_logger("timesync"), "calc: %f %f", sensor_time.seconds(), pc_time.seconds());
+  RCLCPP_DEBUG(rclcpp::get_logger("timesync"), "calc: %f %f", sensor_time.seconds(), pc_time.seconds());
 }
 
 /* Compute the nanoseconds remaining until the system_time_raw reaches a full second (for HW timesync) */
@@ -268,8 +268,8 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
       time_factor = (den == 0.0) ? 1.0 : ((n * sum_xy - sum_x * sum_y) / den);
       base_time = (sum_y - time_factor * sum_x) / n;
 
-      RCLCPP_INFO(rclcpp::get_logger("timesync"), "regress: %f %f %f %f %f %f %f %f", sum_x, sum_xx, sum_y, sum_xy, den,
-                  time_factor, base_time, n);
+      RCLCPP_DEBUG(rclcpp::get_logger("timesync"), "regress: %f %f %f %f %f %f %f %f", sum_x, sum_xx, sum_y, sum_xy,
+                   den, time_factor, base_time, n);
     }
     else
     {
@@ -309,7 +309,7 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
 
   unsigned mean_req_duration_us = sum_req_duration_us_ / samples_.size();
 
-  RCLCPP_INFO(rclcpp::get_logger("timesync"), "update: %f %f %f %f %f %f %u %u", sample.sensor_time.seconds(),
-              sample.pc_time.seconds(), sensor_base.seconds(), pc_base.seconds(), base_time_, scale_time_,
-              (unsigned)req_duration_us, (unsigned)samples_.size());
+  RCLCPP_DEBUG(rclcpp::get_logger("timesync"), "update: %f %f %f %f %f %f %u %u", sample.sensor_time.seconds(),
+               sample.pc_time.seconds(), sensor_base.seconds(), pc_base.seconds(), base_time_, scale_time_,
+               (unsigned)req_duration_us, (unsigned)samples_.size());
 }
