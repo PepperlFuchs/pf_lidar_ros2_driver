@@ -28,7 +28,6 @@ int main(int argc, char* argv[])
   bool watchdog = true; /* "true" means: use scanner default */
   bool apply_correction = false;
   std::string timesync_method("average"); /* "none", "simple" (ad hoc), "average", or "requests" (using HTTP) */
-  std::string timesync_averaging("mean"); /* perform averaging with arithmetic mean or linear regression */
   int timesync_interval = 250;            /* [ms] time between polls if method=="requests" */
   int timesync_period = 10000;            /* [ms] period to collect time offsets for averaging */
   int timesync_offset_usec = 0;           /* [us] to be added to PC timestamp after conversion from sensor timestamp */
@@ -95,13 +94,6 @@ int main(int argc, char* argv[])
   }
   node->get_parameter("timesync_method", timesync_method);
   RCLCPP_INFO(node->get_logger(), "timesync_method: %s", timesync_method.c_str());
-
-  if (!node->has_parameter("timesync_averaging"))
-  {
-    node->declare_parameter("timesync_averaging", timesync_averaging);
-  }
-  node->get_parameter("timesync_averaging", timesync_averaging);
-  RCLCPP_INFO(node->get_logger(), "timesync_averaging: %s", timesync_averaging.c_str());
 
   if (!node->has_parameter("timesync_interval"))
   {
@@ -196,13 +188,8 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  tsval = node->get_parameter("timesync_averaging").get_parameter_value().get<std::string>();
-  config->timesync_averaging = TimeSync::timesync_averaging_name_to_int(tsval);
-  if (config->timesync_averaging < 0)
-  {
-    RCLCPP_ERROR(node->get_logger(), "Invalid timesync_averaging '%s'", tsval.c_str());
-    return -1;
-  }
+  /* Yet only averaging 'mean' is supported, other algorithms have not yet been thoroughly evaluated */
+  config->timesync_averaging = TIMESYNC_AVERAGING_MEAN;
 
   config->timesync_interval = node->get_parameter("timesync_interval").get_parameter_value().get<int>();
   config->timesync_period = node->get_parameter("timesync_period").get_parameter_value().get<int>();
