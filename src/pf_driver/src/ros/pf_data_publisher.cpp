@@ -94,9 +94,17 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     params_->passive_timesync.reset(0.0);
   }
 
-  if (packet.header.header.scan_number != scan_number_ || !msg_)
+  if (!!msg_ && (packet.header.header.scan_number == scan_number_))
   {
-    /* The incoming packet belongs to another scan than we have been recording until now. */
+    /* msg_ already initialized and packet belongs to same scan, ie. is not first packet:
+        No need to update msg_.header details. Just update passive timesync from packet. */
+
+    update_timesync(packet);
+  }
+  else
+  {
+    /* The incoming packet belongs to another scan than we have been recording until now
+        (or, if !msg, it is the very first packet ever since we started receiving) */
 
     /* TBD: Check if msg already has some data and handle_scan even if it's incomplete? */
     //  handle_scan(msg_, layer_idx, layer_inclination, params_->apply_correction);
@@ -192,12 +200,6 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
 
     /* TBD: Preload ranges and intensities with NaN? */
     // msg_->ranges.assign(packet.header.num_points_scan, vector<float>(size, std::numeric_limits<float>::quiet_NaN()));
-  }
-  else
-  {
-    /* Not first packet: Just update passive timesync from packet. No need to update msg.header */
-
-    update_timesync(packet);
   }
 
   int idx = packet.header.first_index;
