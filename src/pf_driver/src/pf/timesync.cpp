@@ -117,7 +117,7 @@ void TimeSync::init(int period, int off_usec, int averaging)
   reset(0.0);
   period_ = period;
   off_usec_ = 1.0E-6 * (double)off_usec;
-  averaging_ = averaging_;
+  averaging_ = averaging;
 }
 
 bool TimeSync::valid(void)
