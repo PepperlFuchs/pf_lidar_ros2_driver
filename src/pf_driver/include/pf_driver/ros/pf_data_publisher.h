@@ -25,12 +25,12 @@ public:
 
 protected:
   std::string frame_id_;
-  uint16_t scan_number_;
-  sensor_msgs::msg::LaserScan::SharedPtr msg_;
+  uint16_t scan_number_ = 0;
+  sensor_msgs::msg::LaserScan::SharedPtr msg_ = nullptr;
   std::mutex q_mutex_;
 
-  std::shared_ptr<ScanConfig> config_;
-  std::shared_ptr<ScanParameters> params_;
+  std::shared_ptr<ScanConfig> config_ = nullptr;
+  std::shared_ptr<ScanParameters> params_ = nullptr;
 
   bool check_status(uint32_t status_flags);
 

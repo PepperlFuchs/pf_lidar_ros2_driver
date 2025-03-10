@@ -94,7 +94,7 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     params_->passive_timesync.reset(0.0);
   }
 
-  if (!!msg_ && (packet.header.header.scan_number == scan_number_))
+  if ((msg_ != nullptr) && (packet.header.header.scan_number == scan_number_))
   {
     /* msg_ already initialized and packet belongs to same scan, ie. is not first packet:
         No need to update msg_.header details. Just update passive timesync from packet. */
