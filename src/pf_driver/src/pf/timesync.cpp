@@ -245,7 +245,7 @@ void TimeSync::update(uint64_t sensor_time_raw, unsigned req_duration_us, rclcpp
     double time_factor = 1.0;
     double base_time = 0.0;
 
-    if (averaging_ = TIMESYNC_AVERAGING_REGRESSION)
+    if (TIMESYNC_AVERAGING_REGRESSION == averaging_)
     {
       /* Linear regression */
 
