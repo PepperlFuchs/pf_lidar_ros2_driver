@@ -19,7 +19,7 @@ At that time of evaluation, an unknown duration has passed since physical recept
 
 Several delays have to be taken into account:
 
- - the timestamp in the packet describes the time when the first included measurement
+ - the timestamp in the packet describes the time when first scan point in this packet was made
     was made. Since then, `num_points_packet` further measurements took place at the
     current sample rate, until the packet was constructed and passed to the
     network driver at the sensor.
@@ -89,7 +89,7 @@ between requests made for sensor time if `timesync_method` is `requests`.
 The parameter `timesync_period` (in milliseconds) determines the period of time
 over which data is recorded for averaging.
 
-Additionally, `timestamp_offset_usec` allows to specify a fixed duration (in microseconds)
+Additionally, `timesync_offset_usec` allows to specify a fixed duration (in microseconds)
 which will be added to the PC time computed from sensor time, to compensate for
 a known extra offset between computed and actual time.
 
