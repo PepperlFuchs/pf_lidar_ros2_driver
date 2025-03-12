@@ -82,7 +82,7 @@ void PFDataPublisher::update_timesync(T& packet)
 template <typename T>
 void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_inclination)
 {
-  if ((packet.header.status_flags & ((1u<<1) | (1<<3))) != 0)
+  if ((packet.header.status_flags & ((1u << 1) | (1 << 3))) != 0)
   {
     /* Information in packet is inconsistent due to new settings (1<<1) or while rotation is unstable (1<<3)
 
