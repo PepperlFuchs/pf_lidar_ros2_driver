@@ -82,14 +82,18 @@ void PFDataPublisher::update_timesync(T& packet)
 template <typename T>
 void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_inclination)
 {
-  if (packet.header.status_flags != 0)
+  if ((packet.header.status_flags & ((1u<<1) | (1<<3))) != 0)
   {
-    /* Information in packet is inconsistent.
+    /* Information in packet is inconsistent due to new settings (1<<1) or while rotation is unstable (1<<3)
 
       Most probably (at startup or after changing parameters) with R2000 the
       header.scan_frequency does not match the actual physical frequency ("unstable
       rotation") and thus the time_increment from header does not match the
-      real sample frequency. TBD: Just ignore this packet or all up to now?
+      effective sample frequency.
+
+        TBD: Just ignore this packet or all up to now and reset?
+
+        TBD: Also react on "invalid_data" (1<<2) and "skipped_packets" (1<<4)?
     */
     params_->passive_timesync.reset(0.0);
   }
