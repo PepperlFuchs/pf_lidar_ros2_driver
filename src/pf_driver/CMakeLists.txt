@@ -36,6 +36,7 @@ set(${PROJECT_NAME}_SOURCES
   src/pf/pf_packet_reader.cpp
   src/pf/pfsdp_base.cpp
   src/pf/pipeline.cpp
+  src/pf/timesync.cpp
   src/pf/http_helpers/curl_resource.cpp
   src/pf/http_helpers/http_helpers.cpp
   src/pf/http_helpers/http_interface.cpp

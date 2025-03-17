@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pf_driver/pf/timesync.h"
+
 #pragma pack(push, sp, 1)
 struct ScanParameters
 {
@@ -10,6 +12,9 @@ struct ScanParameters
   int scan_time_factor = 1;
   int layer_count = 1;
   int inclination_count = 1;
+
+  TimeSync active_timesync;
+  TimeSync passive_timesync;
 
   // void print()
   // {

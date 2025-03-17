@@ -22,6 +22,9 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
   info_ = info;
   params_ = params;
 
+  params_->active_timesync.init(config_->timesync_period, config_->timesync_offset_usec, config_->timesync_averaging);
+  params_->passive_timesync.init(config_->timesync_period, config_->timesync_offset_usec, config_->timesync_averaging);
+
   topic_ = topic;
   frame_id_ = frame_id;
 
@@ -190,6 +193,10 @@ bool PFInterface::start_transmission(std::shared_ptr<std::mutex> net_mtx,
     }
     start_watchdog_timer(timeout_s);
   }
+  if (config_->timesync_method == TIMESYNC_METHOD_REQUESTS)
+  {
+    start_timesync_timer(config_->timesync_interval);
+  }
   change_state(PFState::RUNNING);
   return true;
 }
@@ -209,9 +216,15 @@ void PFInterface::terminate()
   if (!pipeline_)
     return;
 
-  if (config_->watchdog)
+  if (watchdog_timer_)
   {
     watchdog_timer_->cancel();
+    watchdog_timer_ = rclcpp::TimerBase::SharedPtr();
+  }
+  if (timesync_timer_)
+  {
+    timesync_timer_->cancel();
+    timesync_timer_ = rclcpp::TimerBase::SharedPtr();
   }
 
   pipeline_->terminate();
@@ -238,6 +251,27 @@ void PFInterface::start_watchdog_timer(float duration)
 void PFInterface::feed_watchdog()
 {
   protocol_interface_->feed_watchdog(info_->handle);
+}
+
+void PFInterface::start_timesync_timer(unsigned interval)
+{
+  timesync_timer_ =
+      node_->create_wall_timer(std::chrono::milliseconds(interval), std::bind(&PFInterface::update_timesync, this));
+}
+
+void PFInterface::update_timesync(void)
+{
+  rclcpp::Clock steady_clock(RCL_STEADY_TIME);
+
+  rclcpp::Time when(rclcpp::Clock().now());
+  rclcpp::Time start(steady_clock.now());
+
+  auto resp = protocol_interface_->get_parameter("system_time_raw");
+
+  rclcpp::Time end(steady_clock.now());
+
+  const uint64_t sensor_time = stoull(resp["system_time_raw"]);
+  params_->active_timesync.update(sensor_time, (end - start).nanoseconds() / 1000, when);
 }
 
 void PFInterface::on_shutdown()

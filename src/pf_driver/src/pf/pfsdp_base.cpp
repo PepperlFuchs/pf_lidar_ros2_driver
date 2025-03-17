@@ -444,6 +444,44 @@ bool PFSDPBase::reconfig_callback_impl(const std::vector<rclcpp::Parameter>& par
     {
       config_->watchdogtimeout = parameter.as_int();
     }
+    else if (parameter.get_name() == "timesync_method")
+    {
+      std::string tsval = parameter.as_string();
+      int i = TimeSync::timesync_method_name_to_int(tsval);
+      if (i >= 0)
+      {
+        config_->timesync_method = i;
+      }
+      else
+      {
+        successful = false;
+      }
+    }
+    else if (parameter.get_name() == "timesync_averaging")
+    {
+      std::string tsval = parameter.as_string();
+      int i = TimeSync::timesync_averaging_name_to_int(tsval);
+      if (i >= 0)
+      {
+        config_->timesync_averaging = i;
+      }
+      else
+      {
+        successful = false;
+      }
+    }
+    else if (parameter.get_name() == "timesync_interval")
+    {
+      config_->timesync_interval = parameter.as_int();
+    }
+    else if (parameter.get_name() == "timesync_period")
+    {
+      config_->timesync_period = parameter.as_int();
+    }
+    else if (parameter.get_name() == "timesync_offset_usec")
+    {
+      config_->timesync_offset_usec = parameter.as_int();
+    }
     else if (parameter.get_name() == "start_angle")
     {
       config_->start_angle = parameter.as_int();

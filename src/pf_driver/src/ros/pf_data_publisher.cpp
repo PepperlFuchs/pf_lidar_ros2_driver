@@ -54,37 +54,88 @@ bool PFDataPublisher::stop()
   return true;
 }
 
+/** Update statistics for timesync based on packet reception time,
+ *  given a packet with sensor time and packet reception time. The
+ *  time_increment (sample period) must be known and passed in msg.
+ */
+template <typename T>
+void PFDataPublisher::update_timesync(T& packet)
+{
+  /* The timestamp in the packet tells about the time when the first sample in the
+     packet was measured, but now is rather shortly after the *last* sample in the
+     packet was measured (plus transmission and OS processing time that we don't know). */
+
+  /* To compute this, the time_increment must be known and up to date */
+  const auto time_for_points_in_packet =
+      rclcpp::Duration(0, packet.header.num_points_packet * (unsigned int)(1.0E9 * msg_->time_increment));
+  params_->passive_timesync.update(packet.header.timestamp_raw, 0, rclcpp::Clock().now() - time_for_points_in_packet);
+
+  RCLCPP_DEBUG(rclcpp::get_logger("timesync"), "packet#%d.%d.%d with %x %lu %.3f %u %u %f", scan_number_,
+               packet.header.header.scan_number, packet.header.header.packet_number, packet.header.status_flags,
+               packet.header.timestamp_raw, (rclcpp::Clock().now() - time_for_points_in_packet).seconds(),
+               packet.header.num_points_packet, packet.header.scan_frequency, 1.0E6 * msg_->time_increment);
+}
+
 // What are validation checks required here?
 // Skipped scans?
 // Device errors?
 template <typename T>
 void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_inclination)
 {
-  if (!check_status(packet.header.status_flags))
-    return;
-
-  sensor_msgs::msg::LaserScan::SharedPtr msg;
-  if (d_queue_.empty())
-    d_queue_.emplace_back();
-  else if (d_queue_.size() > 5)
-    d_queue_.pop_front();
-  if (packet.header.header.packet_number == 1)
+  if ((packet.header.status_flags & ((1u << 1) | (1 << 3))) != 0)
   {
+    /* Information in packet is inconsistent due to new settings (1<<1) or while rotation is unstable (1<<3)
+
+      Most probably (at startup or after changing parameters) with R2000 the
+      header.scan_frequency does not match the actual physical frequency ("unstable
+      rotation") and thus the time_increment from header does not match the
+      effective sample frequency.
+
+        TBD: Just ignore this packet or all up to now and reset?
+
+        TBD: Also react on "invalid_data" (1<<2) and "skipped_packets" (1<<4)?
+    */
+    params_->passive_timesync.reset(0.0);
+  }
+
+  if ((msg_ != nullptr) && (packet.header.header.scan_number == scan_number_))
+  {
+    /* msg_ already initialized and packet belongs to same scan, ie. is not first packet:
+        No need to update msg_.header details. Just update passive timesync from packet. */
+
+    update_timesync(packet);
+  }
+  else
+  {
+    /* The incoming packet belongs to another scan than we have been recording until now
+        (or, if !msg, it is the very first packet ever since we started receiving) */
+
+    /* TBD: Check if msg already has some data and handle_scan even if it's incomplete? */
+    //  handle_scan(msg_, layer_idx, layer_inclination, params_->apply_correction);
+
+    if (packet.header.header.packet_number != 1)
+    {
+      /* TBD: Discard whole scan if any packet is missing? */
+      // return;
+    }
+
+    msg_.reset(new sensor_msgs::msg::LaserScan());
+
+    msg_->header.frame_id.assign(frame_id_);
+    scan_number_ = packet.header.header.scan_number;
+
     const auto scan_time = rclcpp::Duration(0, 1000000ul * (1000000ul / packet.header.scan_frequency));
-    msg.reset(new sensor_msgs::msg::LaserScan());
-    msg->header.frame_id.assign(frame_id_);
-    // msg->header.seq = packet.header.header.scan_number;
-    msg->scan_time = static_cast<float>(scan_time.seconds());
-    msg->header.stamp = packet.last_acquired_point_stamp - scan_time;
-    msg->angle_increment = packet.header.angular_increment / 10000.0 * (M_PI / 180.0);
+    msg_->scan_time = static_cast<float>(scan_time.seconds());
+
+    msg_->angle_increment = packet.header.angular_increment / 10000.0 * (M_PI / 180.0);
 
     {
       /* Assuming that angle_min always means *first* angle (which may be numerically
        * greater than angle_max in case of negative angular_increment during CW rotation) */
 
-      msg->angle_min = ((double)packet.header.first_angle) * (M_PI / 1800000.0);
-      msg->angle_max = msg->angle_min +
-                       ((double)packet.header.num_points_scan * packet.header.angular_increment) * (M_PI / 1800000.0);
+      msg_->angle_min = ((double)packet.header.first_angle) * (M_PI / 1800000.0);
+      msg_->angle_max = msg_->angle_min +
+                        ((double)packet.header.num_points_scan * packet.header.angular_increment) * (M_PI / 1800000.0);
 
       if (std::is_same<T, PFR2300Packet_C1>::value)  // packet interpretation specific to R2300 output
       {
@@ -92,7 +143,7 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
          * layers */
         if (params_->scan_time_factor > 1)
         {
-          msg->scan_time *= (float)(params_->scan_time_factor);
+          msg_->scan_time *= (float)(params_->scan_time_factor);
         }
 
         double orig_angular_increment = 0.1 * (M_PI / 180.0);
@@ -101,32 +152,60 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
           orig_angular_increment = 0.2 * (M_PI / 180.0);
         };
         /* Consider effective longer time_increment due to filtering with decimation */
-        double decimation = round(orig_angular_increment / msg->angle_increment);
+        double decimation = round(orig_angular_increment / msg_->angle_increment);
 
         /* Assuming that sampling_rate_max==sampling_rate_min==const. */
-        msg->time_increment = decimation / (double)(params_->sampling_rate_max);
+        msg_->time_increment = decimation / (double)(params_->sampling_rate_max);
       }
       else
       {
-        msg->time_increment = fabs(scan_time.seconds() * (double)packet.header.angular_increment * (1.0 / 3600000.0));
+        msg_->time_increment = fabs(scan_time.seconds() * (double)packet.header.angular_increment * (1.0 / 3600000.0));
       }
 
-      msg->range_min = params_->radial_range_min;
-      msg->range_max = params_->radial_range_max;
+      msg_->range_min = params_->radial_range_min;
+      msg_->range_max = params_->radial_range_max;
     }
 
-    msg->ranges.resize(packet.header.num_points_scan);
-    msg->intensities.resize(packet.amplitude.empty() ? 0 : packet.header.num_points_scan);
+    update_timesync(packet);
 
-    d_queue_.push_back(msg);
+    rclcpp::Time first_acquired_point_stamp;
+    if (config_->timesync_method == TIMESYNC_METHOD_REQUESTS && params_->active_timesync.valid())
+    {
+      params_->active_timesync.sensor_to_pc(packet.header.timestamp_raw, first_acquired_point_stamp);
+    }
+    else if (config_->timesync_method == TIMESYNC_METHOD_AVERAGE && params_->passive_timesync.valid())
+    {
+      params_->passive_timesync.sensor_to_pc(packet.header.timestamp_raw, first_acquired_point_stamp);
+    }
+    else if (config_->timesync_method == TIMESYNC_METHOD_SIMPLE)
+    {
+      /* No averaging, just estimate acquisition time from most recent reception time */
+      int points_to_end_of_packet = packet.header.first_index + packet.header.num_points_packet;
+      const auto time_for_measurement =
+          rclcpp::Duration(0, points_to_end_of_packet * (unsigned int)(1.0E9 * msg_->time_increment) +
+                                  1000 * config_->timesync_offset_usec);
+
+      first_acquired_point_stamp = packet.last_acquired_point_stamp - time_for_measurement;
+    }
+    else /* config_->timesync_method == TIMESYNC_METHOD_OFF) */
+    {
+      /* Hopefully the timestamp_raw never exceeds 0x7fffffff.ffffffff seconds */
+      int32_t seconds = (int32_t)((packet.header.timestamp_raw >> 32) & 0xfffffffful);
+      uint32_t nanoseconds = ((packet.header.timestamp_raw & 0xffffffffull) * 1000000000ull) >> 32;
+
+      /* TBD: Construct rclcpp::Time with same clock_type as last_acquired_point_stamp for consistency? */
+      first_acquired_point_stamp =
+          rclcpp::Time(seconds, nanoseconds, packet.last_acquired_point_stamp.get_clock_type());
+    }
+    msg_->header.stamp = first_acquired_point_stamp;
+
+    msg_->ranges.resize(packet.header.num_points_scan);
+    msg_->intensities.resize(packet.amplitude.empty() ? 0 : packet.header.num_points_scan);
+
+    /* TBD: Preload ranges and intensities with NaN? */
+    // msg_->ranges.assign(packet.header.num_points_scan, vector<float>(size, std::numeric_limits<float>::quiet_NaN()));
   }
-  msg = d_queue_.back();
-  if (!msg)
-    return;
 
-  // errors in scan_number - not in sequence sometimes
-  /*if (msg->header.seq != packet.header.header.scan_number)
-    return;*/
   int idx = packet.header.first_index;
 
   for (int i = 0; i < packet.header.num_points_packet; i++)
@@ -151,7 +230,7 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
         data = std::numeric_limits<float>::quiet_NaN();
         echo = std::numeric_limits<float>::quiet_NaN();
       }
-      msg->intensities[idx + i] = std::move(echo);
+      msg_->intensities[idx + i] = std::move(echo);
     }
     else  // no amplitude came with packet, invalid values are encoded as all bits set
     {
@@ -168,23 +247,11 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
         data = std::numeric_limits<float>::quiet_NaN();
       }
     }
-    msg->ranges[idx + i] = std::move(data);
+    msg_->ranges[idx + i] = std::move(data);
   }
 
   if (packet.header.num_points_scan == (idx + packet.header.num_points_packet))
   {
-    if (msg)
-    {
-      handle_scan(msg, layer_idx, layer_inclination, params_->apply_correction);
-      d_queue_.pop_back();
-    }
+    handle_scan(msg_, layer_idx, layer_inclination, params_->apply_correction);
   }
-}
-
-// check the status bits here with a switch-case
-// Currently only for logging purposes only
-bool PFDataPublisher::check_status(uint32_t status_flags)
-{
-  // if(packet.header.header.scan_number > packet.)
-  return true;
 }
