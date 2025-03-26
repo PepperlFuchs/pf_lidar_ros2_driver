@@ -2,6 +2,25 @@
 Changelog for package pf_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.1.0 (2025-03-26)
+------------------
+* different methods implemented to calculate timestamp in sensor_msgs (header.stamp) and
+  configurable by the user, see `docs/timesync.md <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/blob/main/docs/timesync.md>`_,
+  `Issue #33 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/issues/33>`_,
+  `PR #36 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/pull/36>`_
+* launch files added with different device configurations `PR #35 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/pull/35>`_
+* sensor start scan output with packet_type and watchdog only optionally `PR #28 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/pull/28>`_
+* make driver less dependent on numeric "device_family" and product strings, query protocol info 
+  instead `PR #27 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/pull/27>`_, `Issue #22 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/issues/22>`_
+* clean exit from main loop and termination of driver process with SIGINT
+  `Issue #19 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/issues/19>`_,
+  `Issue #25 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/issues/25>`_,
+  `PR #20 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/pull/20>`_,
+  `PR #26 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/pull/26>`_
+* use Inf or NaN to represent invalid measurements (msgs/LaserScan distance[])
+  `Issue #18 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/issues/18>`_,
+  `PR #23 <https://github.com/PepperlFuchs/pf_lidar_ros2_driver/pull/23>`_
+
 2.0.0 (2024-11-26)
 ------------------
 * ROS/sensor parameters replaced by ROS services (pfsdp_get_parameter & pfsdp_set_parameter)
