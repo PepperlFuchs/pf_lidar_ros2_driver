@@ -2,7 +2,6 @@
 
 #include "pf_driver/pf/timesync.h"
 
-#pragma pack(push, sp, 1)
 struct ScanParameters
 {
   double radial_range_min = 0.0;
@@ -30,4 +29,3 @@ struct ScanParameters
   //   std::cout << std::endl;
   // }
 };
-#pragma pack(pop, sp)
