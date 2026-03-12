@@ -8,7 +8,6 @@ find_package(ament_index_cpp REQUIRED)
 find_package(pf_interfaces)
 find_package(laser_geometry REQUIRED)
 find_package(pcl_conversions REQUIRED)
-find_package(pcl_ros REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -66,15 +65,12 @@ target_link_libraries(ros_main
   curl
   jsoncpp
   yaml-cpp
-)
-
-ament_target_dependencies(ros_main
-  rclcpp
-  pf_interfaces
-  laser_geometry
-  tf2_ros
-  pcl_ros
-  pf_interfaces
+  ${pf_interfaces_TARGETS}
+  laser_geometry::laser_geometry
+  pcl_conversions::pcl_conversions
+  rclcpp::rclcpp
+  ${sensor_msgs_TARGETS}
+  tf2_ros::tf2_ros
 )
 
 #roslint_cpp(src/ros/ros_main.cpp
@@ -108,13 +104,12 @@ if (BUILD_TESTING)
     curl
     jsoncpp
     yaml-cpp
-  )
-  ament_target_dependencies(${PROJECT_NAME}_test
-    ${THIS_PACKAGE_INCLUDE_DEPENDS}
-    laser_geometry
-    pcl_ros
-    pf_interfaces
-    rclcpp
+    ${pf_interfaces_TARGETS}
+    laser_geometry::laser_geometry
+    pcl_conversions::pcl_conversions
+    rclcpp::rclcpp
+    ${sensor_msgs_TARGETS}
+    tf2_ros::tf2_ros
   )
 endif()
 
