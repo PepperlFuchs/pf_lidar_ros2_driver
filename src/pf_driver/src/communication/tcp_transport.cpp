@@ -11,7 +11,7 @@ auto tcp_logger = rclcpp::get_logger("transport");
 
 TCPTransport::TCPTransport(std::string address) : Transport(address, transport_type::tcp)
 {
-  io_service_ = std::make_shared<boost::asio::io_service>();
+  io_service_ = std::make_shared<boost::asio::io_context>();
   socket_ = std::make_unique<tcp::socket>(*io_service_);
   timer_ = std::make_shared<boost::asio::deadline_timer>(*io_service_.get());
 }
@@ -26,15 +26,15 @@ bool TCPTransport::connect()
   try
   {
     tcp::resolver resolver(*io_service_);
-    tcp::resolver::query query(address_, std::to_string(port_));
-    tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-    tcp::resolver::iterator end;
+    auto results = resolver.resolve(address_, std::to_string(port_));
 
     boost::system::error_code error = boost::asio::error::host_not_found;
-    while (error && endpoint_iterator != end)
+    for (const auto& endpoint : results)
     {
       socket_->close();
-      socket_->connect(*endpoint_iterator++, error);
+      socket_->connect(endpoint, error);
+      if (!error)
+        break;
     }
     if (error)
     {
@@ -102,6 +102,6 @@ bool TCPTransport::readWithTimeout(boost::array<uint8_t, 4096>& buf, size_t& len
       success = false;
     }
   }
-  io_service_->reset();
+  io_service_->restart();
   return success;
 }

@@ -68,7 +68,7 @@ protected:
   int port_;
   bool is_connected_;
   transport_type type_;
-  std::shared_ptr<boost::asio::io_service> io_service_;
+  std::shared_ptr<boost::asio::io_context> io_service_;
   std::shared_ptr<boost::asio::deadline_timer> timer_;
   boost::optional<boost::system::error_code> timer_result_;
 };

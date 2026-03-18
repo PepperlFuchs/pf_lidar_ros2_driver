@@ -11,8 +11,8 @@ auto udp_logger = rclcpp::get_logger("transport");
 
 UDPTransport::UDPTransport(std::string address, int port) : Transport(address, transport_type::udp)
 {
-  io_service_ = std::make_shared<boost::asio::io_service>();
-  udp::endpoint local_endpoint = udp::endpoint(boost::asio::ip::address_v4::from_string("0.0.0.0"), port);
+  io_service_ = std::make_shared<boost::asio::io_context>();
+  udp::endpoint local_endpoint = udp::endpoint(boost::asio::ip::make_address_v4("0.0.0.0"), port);
 
   socket_ = std::make_unique<udp::socket>(*io_service_, local_endpoint);
   timer_ = std::make_shared<boost::asio::deadline_timer>(*io_service_.get());
@@ -25,7 +25,7 @@ UDPTransport::~UDPTransport()
 
 bool UDPTransport::connect()
 {
-  udp::endpoint udp_endpoint = udp::endpoint(boost::asio::ip::address::from_string(address_), 0);
+  udp::endpoint udp_endpoint = udp::endpoint(boost::asio::ip::make_address(address_), 0);
   socket_->connect(udp_endpoint);
   port_ = socket_->local_endpoint().port();
   host_ip_ = socket_->local_endpoint().address().to_string();
@@ -88,6 +88,6 @@ bool UDPTransport::readWithTimeout(boost::array<uint8_t, 4096>& buf, size_t& len
       success = false;
     }
   }
-  io_service_->reset();
+  io_service_->restart();
   return success;
 }
