@@ -67,17 +67,17 @@ target_link_libraries(ros_main
   yaml-cpp
   ${pf_interfaces_TARGETS}
   laser_geometry::laser_geometry
-  pcl_conversions::pcl_conversions
   rclcpp::rclcpp
   ${sensor_msgs_TARGETS}
   tf2_ros::tf2_ros
 )
-
-#roslint_cpp(src/ros/ros_main.cpp
-#            src/ros/scan_publisher.cpp
-#            src/pf/pf_interface.cpp
-#            src/pf/pf_packet.cpp
-#            src/communication.cpp)
+if (TARGET pcl_conversions::pcl_conversions)
+  target_link_libraries(ros_main pcl_conversions::pcl_conversions)
+else()
+  # Backward compatibility with Humble
+  target_link_libraries(ros_main ${pcl_conversions_LIBRARIES})
+  target_include_directories(ros_main PRIVATE ${pcl_conversions_INCLUDE_DIRS})
+endif()
 
 if (BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
@@ -99,17 +99,10 @@ if (BUILD_TESTING)
     $<INSTALL_INTERFACE:include>
   )
   target_link_libraries(${PROJECT_NAME}_test
-    ament_index_cpp::ament_index_cpp
-    curlpp
-    curl
-    jsoncpp
-    yaml-cpp
-    ${pf_interfaces_TARGETS}
-    laser_geometry::laser_geometry
-    pcl_conversions::pcl_conversions
-    rclcpp::rclcpp
-    ${sensor_msgs_TARGETS}
-    tf2_ros::tf2_ros
+    $<TARGET_PROPERTY:ros_main,LINK_LIBRARIES>
+  )
+  target_include_directories(${PROJECT_NAME}_test PRIVATE
+    $<TARGET_PROPERTY:ros_main,INCLUDE_DIRECTORIES>
   )
 endif()
 
