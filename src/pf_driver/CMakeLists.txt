@@ -25,10 +25,6 @@ get_target_property(jsoncpp_INCLUDE_DIRS jsoncpp_lib INTERFACE_INCLUDE_DIRECTORI
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CURLPP REQUIRED curlpp)
 
-include_directories(
-  include
-  ${jsoncpp_INCLUDE_DIRS}
-)
 
 set(${PROJECT_NAME}_SOURCES
   src/pf/pf_interface.cpp
@@ -58,6 +54,10 @@ set(${PROJECT_NAME}_SOURCES
 add_executable(ros_main
   ${${PROJECT_NAME}_SOURCES}
   src/ros/ros_main.cpp
+)
+target_include_directories(ros_main PRIVATE
+  include
+  ${jsoncpp_INCLUDE_DIRS}
 )
 
 target_link_libraries(ros_main
@@ -101,6 +101,7 @@ if (BUILD_TESTING)
   target_include_directories(${PROJECT_NAME}_test PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
+    ${jsoncpp_INCLUDE_DIRS}
   )
   target_link_libraries(${PROJECT_NAME}_test
     ament_index_cpp::ament_index_cpp
