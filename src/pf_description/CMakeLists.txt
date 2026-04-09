@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.20)
 project(pf_description)
 
 find_package(ament_cmake REQUIRED)
