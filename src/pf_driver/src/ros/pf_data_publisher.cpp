@@ -82,6 +82,9 @@ void PFDataPublisher::update_timesync(T& packet)
 template <typename T>
 void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_inclination)
 {
+  const uint16_t packet_scan_number = packet.header.header.scan_number;
+  const uint16_t packet_number = packet.header.header.packet_number;
+
   if ((packet.header.status_flags & ((1u << 1) | (1 << 3))) != 0)
   {
     /* Information in packet is inconsistent due to new settings (1<<1) or while rotation is unstable (1<<3)
@@ -98,11 +101,17 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     params_->passive_timesync.reset(0.0);
   }
 
-  if ((msg_ != nullptr) && (packet.header.header.scan_number == scan_number_))
+  // drop packets that belong to last scan
+  // in case of out-of-order packets
+  if (packet_scan_number == scan_number_ - 1)
+  {
+    return;
+  }
+
+  if ((msg_ != nullptr) && (packet_scan_number == scan_number_))
   {
     /* msg_ already initialized and packet belongs to same scan, ie. is not first packet:
         No need to update msg_.header details. Just update passive timesync from packet. */
-
     update_timesync(packet);
   }
   else
@@ -110,19 +119,21 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     /* The incoming packet belongs to another scan than we have been recording until now
         (or, if !msg, it is the very first packet ever since we started receiving) */
 
-    /* TBD: Check if msg already has some data and handle_scan even if it's incomplete? */
-    //  handle_scan(msg_, layer_idx, layer_inclination, params_->apply_correction);
-
-    if (packet.header.header.packet_number != 1)
+    // if there is a pending message, send it out before starting to record the new scan
+    if (msg_ != nullptr)
     {
-      /* TBD: Discard whole scan if any packet is missing? */
-      // return;
+      // Start of a new scan, but data of old scan is available
+      // send out the old scan
+      handle_scan(msg_, layer_idx, layer_inclination, params_->apply_correction);
+      // the message was sent out, so we can release it here
+      msg_.reset();
     }
 
     msg_.reset(new sensor_msgs::msg::LaserScan());
+    count_points_current_scan_ = 0;
 
     msg_->header.frame_id.assign(frame_id_);
-    scan_number_ = packet.header.header.scan_number;
+    scan_number_ = packet_scan_number;
 
     const auto scan_time = rclcpp::Duration(0, 1000000ul * (1000000ul / packet.header.scan_frequency));
     msg_->scan_time = static_cast<float>(scan_time.seconds());
@@ -133,9 +144,9 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
       /* Assuming that angle_min always means *first* angle (which may be numerically
        * greater than angle_max in case of negative angular_increment during CW rotation) */
 
-      msg_->angle_min = ((double)packet.header.first_angle) * (M_PI / 1800000.0);
+      msg_->angle_min = static_cast<double>(config_->start_angle) * (M_PI / 1800000.0);
       msg_->angle_max = msg_->angle_min +
-                        ((double)packet.header.num_points_scan * packet.header.angular_increment) * (M_PI / 1800000.0);
+                        static_cast<double>(packet.header.num_points_scan * packet.header.angular_increment) * (M_PI / 1800000.0);
 
       if (std::is_same<T, PFR2300Packet_C1>::value)  // packet interpretation specific to R2300 output
       {
@@ -250,8 +261,13 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     msg_->ranges[idx + i] = std::move(data);
   }
 
-  if (packet.header.num_points_scan == (idx + packet.header.num_points_packet))
+  count_points_current_scan_ += packet.header.num_points_packet;
+
+  // send out the scan if we have received all points for the scan
+  if (packet.header.num_points_scan == count_points_current_scan_)
   {
     handle_scan(msg_, layer_idx, layer_inclination, params_->apply_correction);
+    // the message was sent out, so we can release it here
+    msg_.reset();
   }
 }
