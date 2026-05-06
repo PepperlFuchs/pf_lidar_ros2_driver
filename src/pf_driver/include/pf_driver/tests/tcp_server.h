@@ -37,11 +37,11 @@ void publish_data(tcp::socket& socket)
 
 void start_server(int port)
 {
-  boost::asio::io_service io_service;
+  boost::asio::io_context io_context;
   // listen for new connection
-  tcp::acceptor acceptor_(io_service, tcp::endpoint(tcp::v4(), port));
+  tcp::acceptor acceptor_(io_context, tcp::endpoint(tcp::v4(), port));
   // socket creation
-  tcp::socket socket_(io_service);
+  tcp::socket socket_(io_context);
   // waiting for connection
   acceptor_.accept(socket_);
   // read operation
