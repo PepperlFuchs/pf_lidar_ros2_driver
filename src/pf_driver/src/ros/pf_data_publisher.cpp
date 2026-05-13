@@ -119,21 +119,30 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     /* The incoming packet belongs to another scan than we have been recording until now
         (or, if !msg, it is the very first packet ever since we started receiving) */
 
-    // if there is a pending message, send it out before starting to record the new scan
+    // if there is a pending message, packets were dropped or came out-of-order
+    // => Drop current message and start a new one
     if (msg_ != nullptr)
     {
-      // Start of a new scan, but data of old scan is available
-      // send out the old scan
-      handle_scan(msg_, layer_idx, layer_inclination, params_->apply_correction);
-      // the message was sent out, so we can release it here
+      RCLCPP_WARN(rclcpp::get_logger("pf_data_publisher"), "Dropping incomplete scan %d.", scan_number_);
+      // drop message by releasing it
       msg_.reset();
     }
 
-    msg_.reset(new sensor_msgs::msg::LaserScan());
+    // create new scan message and initialize header details from packet
+    msg_ = std::make_shared<sensor_msgs::msg::LaserScan>();
+    msg_->ranges.resize(packet.header.num_points_scan);
+    msg_->intensities.resize(packet.amplitude.empty() ? 0 : packet.header.num_points_scan);
     count_points_current_scan_ = 0;
-
     msg_->header.frame_id.assign(frame_id_);
     scan_number_ = packet_scan_number;
+
+    // We will only update the header details for the first packet of the scan
+    if (packet_number != 1)
+    {
+      // Quiet return; A warning message will be sent out when the next scan starts and 
+      // the incomplete scan message is discarded. This avoids flooding the log with warnings.
+      return;
+    }
 
     const auto scan_time = rclcpp::Duration(0, 1000000ul * (1000000ul / packet.header.scan_frequency));
     msg_->scan_time = static_cast<float>(scan_time.seconds());
@@ -144,7 +153,7 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
       /* Assuming that angle_min always means *first* angle (which may be numerically
        * greater than angle_max in case of negative angular_increment during CW rotation) */
 
-      msg_->angle_min = static_cast<double>(config_->start_angle) * (M_PI / 1800000.0);
+      msg_->angle_min = static_cast<double>(packet.header.first_angle) * (M_PI / 1800000.0);
       msg_->angle_max = msg_->angle_min +
                         static_cast<double>(packet.header.num_points_scan * packet.header.angular_increment) * (M_PI / 1800000.0);
 
@@ -210,11 +219,6 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     }
     msg_->header.stamp = first_acquired_point_stamp;
 
-    msg_->ranges.resize(packet.header.num_points_scan);
-    msg_->intensities.resize(packet.amplitude.empty() ? 0 : packet.header.num_points_scan);
-
-    /* TBD: Preload ranges and intensities with NaN? */
-    // msg_->ranges.assign(packet.header.num_points_scan, vector<float>(size, std::numeric_limits<float>::quiet_NaN()));
   }
 
   int idx = packet.header.first_index;
