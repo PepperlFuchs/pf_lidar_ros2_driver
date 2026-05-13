@@ -1,3 +1,6 @@
 *.json
 *.pyc
 *.orig
+build/
+install/
+log/
