@@ -115,14 +115,21 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
 
     if (packet.header.header.packet_number != 1)
     {
-      /* TBD: Discard whole scan if any packet is missing? */
-      // return;
+      /* Discard whole scan if any packet is missing */
+      if (!reported_drop_)
+      {
+          RCLCPP_WARN(rclcpp::get_logger("pf_data_publisher"), "Dropping incomplete scan %d.", scan_number_);
+          reported_drop_ = true;
+      }
+      return;
     }
+    reported_drop_ = false;
 
     msg_.reset(new sensor_msgs::msg::LaserScan());
 
     msg_->header.frame_id.assign(frame_id_);
     scan_number_ = packet.header.header.scan_number;
+    count_points_current_scan_ = 0;
 
     const auto scan_time = rclcpp::Duration(0, 1000000ul * (1000000ul / packet.header.scan_frequency));
     msg_->scan_time = static_cast<float>(scan_time.seconds());
@@ -250,7 +257,9 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     msg_->ranges[idx + i] = std::move(data);
   }
 
-  if (packet.header.num_points_scan == (idx + packet.header.num_points_packet))
+  count_points_current_scan_ += packet.header.num_points_packet;
+
+  if (count_points_current_scan_ == packet.header.num_points_scan)
   {
     handle_scan(msg_, layer_idx, layer_inclination, params_->apply_correction);
   }

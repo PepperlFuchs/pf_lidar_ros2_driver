@@ -25,7 +25,11 @@ public:
 
 protected:
   std::string frame_id_;
+  // starting with 'true' suppresses log message about incomplete scan before first output
+  bool reported_drop_ = true;
   uint16_t scan_number_ = 0;
+  uint16_t count_points_current_scan_ = 0;
+
   sensor_msgs::msg::LaserScan::SharedPtr msg_ = nullptr;
   std::mutex q_mutex_;
 
