@@ -382,6 +382,20 @@ void PFSDPBase::get_scan_parameters()
       }
     }
   }
+  else
+  {
+    /* Some 4-layer R2300 do not tell "layer_count" nor inclination, only "layer_enable" */
+
+    json_resp = http_interface->get("get_parameter", { KV("list", "layer_enable") });
+    if (json_resp["error_code"].asInt() == 0)
+    {
+      /* Derive layer count from size of layer_enable array */
+      Json::Value& val(json_resp["layer_enable"]);
+
+      params_->layer_count = val.isArray() ? val.size() : 4;
+      params_->inclination_count = params_->layer_count;
+    }
+  }
 }
 
 // handle "dynamic" parameters
