@@ -17,4 +17,8 @@ protected:
 
   virtual void read_data(uint8_t* buf, size_t num);
   virtual void read_with(PFPacketReader& reader);
+  virtual size_t get_point_data_size() {
+    static_assert(sizeof(Data) == 6, "Data struct size is not 6 bytes");
+    return sizeof(Data);
+  }
 };

@@ -13,28 +13,36 @@ public:
   virtual bool parse(uint8_t* buf, size_t buf_len, std::vector<std::unique_ptr<PFPacket>>& results, size_t& used,
                      rclcpp::Logger logger) override
   {
+    const size_t initial_buf_len = buf_len;
     std::unique_ptr<T> packet = std::make_unique<T>();
     uint32_t serial_size = packet->get_size();
     uint8_t* orig_buf = buf;
     int count = 0;
     used = 0;
-
+    bool success = true;
     while (buf_len >= serial_size)
     {
       int start = packet->find_packet_start(buf, buf_len);
       if (start == -1)
       {
         RCLCPP_DEBUG(logger, "No magic number found. Invalid packet.");
+        success = false;
         break;
       }
       buf += start;
       buf_len -= start;
-      if (buf_len < serial_size)
+      if (buf_len < serial_size) {
+        RCLCPP_DEBUG(logger, "Rest of buffer is smaller then packet header.");
+        success = false;
         break;
+      }
       size_t remainder = 0;
       size_t p_size = 0;
-      if (!packet->parse_buf(buf, buf_len, remainder, p_size))
+      if (!packet->parse_buf(buf, buf_len, remainder, p_size)) {
+        RCLCPP_DEBUG(logger, "Failed to parse packet data.");
+        success = false;
         break;
+      }
       packet->last_acquired_point_stamp = rclcpp::Clock().now();
       results.push_back(std::move(packet));
       ++count;
@@ -43,6 +51,11 @@ public:
       buf_len -= p_size;
       used = buf - orig_buf;
       packet = std::make_unique<T>();
+    }
+
+    if (!success) {
+      // invalidate the rest of the buffer if we failed to parse a packet
+      used = initial_buf_len;
     }
 
     if (count == 0)
