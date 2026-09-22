@@ -6,6 +6,10 @@
 bool PFPacket::parse_buf(uint8_t* buf, size_t buf_len, size_t& remainder, size_t& packet_size)
 {
   const size_t SIZE = get_size();
+  // check if buffer is large enough for the header
+  if (buf_len < SIZE)
+    return false;
+
   boost::shared_array<uint8_t> buffer(new uint8_t[SIZE]);
   std::copy(buf, buf + SIZE, buffer.get());
 
@@ -14,8 +18,21 @@ bool PFPacket::parse_buf(uint8_t* buf, size_t buf_len, size_t& remainder, size_t
   uint16_t num;
   std::tie(h_size, p_size, num) = read_header(buffer);
 
-  auto data_size = p_size - h_size;
+  // advertised header size must not be greater than size of message
+  // NOTE: The get_size() - function will return the size of the header including padding,
+  // so comparison to equality will fail!
+  if (h_size > SIZE)
+    return false;
+
+  // check if the buffer is large enough to contain the entire packet
   if (buf_len < p_size)
+    return false;
+
+  // calculate the size of the point data based on the number of points and the size of each point
+  const size_t packet_data_size = get_point_data_size() * num;
+
+  // check if the packet size is sufficient to hold the point data and the header
+  if (p_size < packet_data_size + h_size)
     return false;
 
   read_data(&buf[h_size], num);
