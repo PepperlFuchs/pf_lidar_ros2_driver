@@ -5,8 +5,8 @@
     <!-- create a virtual root link -->
     <link name="world" />
 
-    <!-- instantiate r2300 macro -->
-    <xacro:r2000 prefix="" />
+    <!-- instantiate r2400 macro -->
+    <xacro:r2400 prefix="" />
 
     <!-- connect world link to scanner link -->
     <joint name="world_joint" type="fixed">
