@@ -5,6 +5,7 @@
 **Prerequisites:**  
 OMDxxx-R2000 Hardware & Firmware >= 1.50 (No support of OBDxxx-R2000 devices)  
 OMDxxx-R2300 Hardware >= 0.95, Firmware >= 1.00
+OMDxxx-R2400 Hardware & Firmware >= 1.00
 
 **Required platform:**  
 Ubuntu-22.04/ROS-Humble OR Ubuntu-24.04/ROS-Jazzy OR Ubuntu-24.04/ROS-Kilted
@@ -36,6 +37,10 @@ R2000:
 ```
 ros2 launch pf_driver r2000.launch.py
 ```
+R2400:
+```
+ros2 launch pf_driver r2400.launch.py
+```
 R2300 4-layer:
 ```
 ros2 launch pf_driver r2300.launch.py
@@ -61,7 +66,7 @@ turn. This is not strictly from bottom to top:
 |3 |+1.5° | - |
 
 **ROS-Topics:**  
-The R2000 and R2300 devices each publish two topics. See the topics documentation [topics.md](./docs/topics.md) for more details.
+The R2000, R2300 and R2400 devices each publish two topics. See the topics documentation [topics.md](./docs/topics.md) for more details.
 
 **ROS-Services:**  
 The ROS driver offers several ROS services which can be used to communicate with the sensor. Especially
@@ -78,5 +83,7 @@ pfsdp_init: ['user_tag=myTag20090505', 'hmi_application_text_1=MyHMIapplText1980
 ```
 Other device parameters can be set in this way. An overview of the settable device parameters and their
 possible adjustable values can be found in the following documents
-[R2000](https://files.pepperl-fuchs.com/webcat/navi/productInfo/doct/doct3469g.pdf) /
-[R2300](https://files.pepperl-fuchs.com/webcat/navi/productInfo/doct/doct7001b.pdf)).
+[R2000](https://files.pepperl-fuchs.com/webcat/navi/productInfo/doct/doct3469h.pdf) /
+[R2300](https://files.pepperl-fuchs.com/webcat/navi/productInfo/doct/doct7001c.pdf) /
+[R2400](https://files.pepperl-fuchs.com/webcat/navi/productInfo/doct/doctc087a.pdf)).
+
