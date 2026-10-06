@@ -63,7 +63,7 @@ Decimation caused by optional scan data filtering is taken into account. A
 `time_increment` previously was derived from `scan_time` and thus
 always zero (see above) but now will give reasonable information.
 
-For R2000 it is still computed from the `scan_time`, which is computed the
+For R2000 and R2400 it is still computed from the `scan_time`, which is computed the
 from *configured* `scan_frequency` value, simply by dividing:
 
     R2000 time_increment := scan_time / (360° / angular_increment)
