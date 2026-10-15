@@ -87,6 +87,7 @@ if (BUILD_TESTING)
   #  tests/pfsdp_protocol.cpp)
     tests/pipeline.cpp
     tests/parse_packet.cpp
+    tests/scan_assembly.cpp
   )
 
   # Add gtests
