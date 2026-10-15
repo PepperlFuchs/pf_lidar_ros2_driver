@@ -1,11 +1,11 @@
-## ROS2 driver for R2000 and R2300 laser scanners
+## ROS2 driver for R2000, R2400 and R2300 laser scanners
 
 ![Build Status](https://github.com/PepperlFuchs/pf_lidar_ros2_driver/actions/workflows/main.yml/badge.svg?branch=main)
 
 **Prerequisites:**  
 OMDxxx-R2000 Hardware & Firmware >= 1.50 (No support of OBDxxx-R2000 devices)  
-OMDxxx-R2300 Hardware >= 0.95, Firmware >= 1.00  
 OMDxxx-R2400 Hardware & Firmware >= 1.00
+OMDxxx-R2300 Hardware >= 0.95, Firmware >= 1.00  
 
 **Required platform:**  
 Ubuntu-22.04/ROS-Humble OR Ubuntu-24.04/ROS-Jazzy OR Ubuntu-24.04/ROS-Kilted
