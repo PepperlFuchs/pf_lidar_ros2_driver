@@ -5,7 +5,8 @@
 
 Pipeline::Pipeline(std::shared_ptr<Writer<PFPacket>> writer, std::shared_ptr<Reader<PFPacket>> reader,
                    std::function<void()> func, std::shared_ptr<std::mutex> net_mtx,
-                   std::shared_ptr<std::condition_variable> net_cv, bool& net_fail)
+                   std::shared_ptr<std::condition_variable> net_cv, bool& net_fail,
+                   std::shared_ptr<DropCounters> counters)
   : queue_{ 100 }
   , reader_(reader)
   , writer_(writer)
@@ -15,7 +16,14 @@ Pipeline::Pipeline(std::shared_ptr<Writer<PFPacket>> writer, std::shared_ptr<Rea
   , net_mtx_(net_mtx)
   , net_cv_(net_cv)
   , net_fail_(net_fail)
+  , counters_(counters ? std::move(counters) : std::make_shared<DropCounters>())
 {
+  counters_->setQueueCapacity(queue_capacity());
+}
+
+std::size_t Pipeline::queue_capacity() const
+{
+  return queue_.max_capacity();
 }
 
 bool Pipeline::start()
@@ -78,8 +86,13 @@ void Pipeline::run_writer()
     }
     for (auto& p : packets)
     {
-      if (!queue_.try_enqueue(std::move(p)))
-        RCLCPP_DEBUG(rclcpp::get_logger("pipeline"), "Queue overflow!");
+      if (!queue_.try_enqueue(std::move(p)) && p)
+      {
+        // Failed enqueue leaves p intact. Null entries retain their old ignore behavior.
+        const auto& header = p->commonHeader();
+        counters_->recordDrop(DropReason::QUEUE_FULL,
+                              { header.scan_number, header.packet_number, 0, 0, 0, queue_capacity() });
+      }
     }
     packets.clear();
   }

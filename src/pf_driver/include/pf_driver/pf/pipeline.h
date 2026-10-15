@@ -10,6 +10,7 @@
 #include "pf_driver/queue/readerwriterqueue.h"
 #include "pf_driver/pf/writer.h"
 #include "pf_driver/pf/reader.h"
+#include "pf_driver/pf/drop_counters.h"
 
 class PFPacket;
 
@@ -18,7 +19,8 @@ class Pipeline
 public:
   Pipeline(std::shared_ptr<Writer<PFPacket>> writer, std::shared_ptr<Reader<PFPacket>> reader,
            std::function<void()> func, std::shared_ptr<std::mutex> net_mtx,
-           std::shared_ptr<std::condition_variable> net_cv, bool& net_fail);
+           std::shared_ptr<std::condition_variable> net_cv, bool& net_fail,
+           std::shared_ptr<DropCounters> counters = nullptr);
 
   bool start();
 
@@ -27,6 +29,8 @@ public:
   bool is_running();
 
   void on_shutdown();
+
+  std::size_t queue_capacity() const;
 
 private:
   moodycamel::BlockingReaderWriterQueue<std::unique_ptr<PFPacket>> queue_;  // the queue basically stored scan data
@@ -39,6 +43,7 @@ private:
   std::shared_ptr<std::mutex> net_mtx_;
   std::shared_ptr<std::condition_variable> net_cv_;
   bool& net_fail_;
+  std::shared_ptr<DropCounters> counters_;
 
   void run_writer();
 

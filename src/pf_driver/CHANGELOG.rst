@@ -2,6 +2,15 @@
 Changelog for package pf_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Count discarded scans and queue-full packets with totals that survive publisher
+  and pipeline recreation. Preserve the upstream assembly and timing behavior.
+* Publish drop diagnostics with synchronized hardware metadata and a configurable
+  wall-clock period. Report first drops and independent one-second summaries.
+* Add synthetic packet, attribution, queue-overflow and device-free diagnostics
+  tests, including reordered starts, scan-number rollover and stopped ROS time.
+
 2.1.0 (2025-03-26)
 ------------------
 * different methods implemented to calculate timestamp in sensor_msgs (header.stamp) and

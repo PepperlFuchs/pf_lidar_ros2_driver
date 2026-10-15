@@ -11,7 +11,8 @@
 #include "pf_driver/communication/udp_transport.h"
 #include "pf_driver/communication/tcp_transport.h"
 
-PFInterface::PFInterface(std::shared_ptr<rclcpp::Node> node) : node_(node), state_(PFState::UNINIT)
+PFInterface::PFInterface(std::shared_ptr<rclcpp::Node> node)
+  : node_(node), drop_diagnostics_(node), state_(PFState::UNINIT)
 {
 }
 
@@ -21,6 +22,7 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
   config_ = config;
   info_ = info;
   params_ = params;
+  drop_diagnostics_.setHardwareId(info_->hostname);
 
   params_->active_timesync.init(config_->timesync_period, config_->timesync_offset_usec, config_->timesync_averaging);
   params_->passive_timesync.init(config_->timesync_period, config_->timesync_offset_usec, config_->timesync_averaging);
@@ -60,13 +62,14 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
   {
     params_->scan_time_factor = params_->layer_count;
     reader_ = std::shared_ptr<PFPacketReader>(
-        new PointcloudPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str(), params_->layer_count));
+        new PointcloudPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str(), params_->layer_count,
+                                drop_diagnostics_.counters()));
   }
   else
   {
     params_->scan_time_factor = 1;
     reader_ = std::shared_ptr<PFPacketReader>(
-        new LaserscanPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str()));
+        new LaserscanPublisher(node_, config_, params_, topic.c_str(), frame_id.c_str(), drop_diagnostics_.counters()));
   }
 
   if (std::find(opi.commands.begin(), opi.commands.end(), "list_iq_parameters") != opi.commands.end())
@@ -75,6 +78,7 @@ bool PFInterface::init(std::shared_ptr<HandleInfo> info, std::shared_ptr<ScanCon
   }
 
   product_ = protocol_interface_->get_product();
+  drop_diagnostics_.setHardwareId(product_ + " " + info_->hostname);
   RCLCPP_INFO(node_->get_logger(), "Device found: %s", product_.c_str());
 
   // release previous handles
@@ -383,7 +387,7 @@ std::unique_ptr<Pipeline> PFInterface::get_pipeline(const std::string& packet_ty
   writer =
       std::shared_ptr<Writer<PFPacket>>(new PFWriter<PFPacket>(std::move(transport_), parser, node_->get_logger()));
   return std::make_unique<Pipeline>(writer, reader_, std::bind(&PFInterface::connection_failure_cb, this), net_mtx,
-                                    net_cv, net_fail);
+                                    net_cv, net_fail, drop_diagnostics_.counters());
 }
 
 void PFInterface::pfsdp_reboot(int32_t& error_code, std::string& error_text)

@@ -14,7 +14,8 @@ class PointcloudPublisher : public PFDataPublisher
 public:
   PointcloudPublisher(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<ScanConfig> config,
                       std::shared_ptr<ScanParameters> params, const std::string& scan_topic,
-                      const std::string& frame_id, const uint16_t num_layers);
+                      const std::string& frame_id, const uint16_t num_layers,
+                      std::shared_ptr<DropCounters> counters = nullptr);
 
 private:
   std::shared_ptr<rclcpp::Node> node_;

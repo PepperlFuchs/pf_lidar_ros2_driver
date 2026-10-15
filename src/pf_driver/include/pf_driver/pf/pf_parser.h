@@ -1,5 +1,7 @@
 #pragma once
 
+#include <rclcpp/clock.hpp>
+
 #include "pf_driver/pf/parser.h"
 #include "pf_driver/pf/pf_packet/pf_r2000_packet_a.h"
 #include "pf_driver/pf/pf_packet/pf_r2000_packet_b.h"

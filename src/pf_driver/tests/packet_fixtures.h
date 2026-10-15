@@ -66,8 +66,9 @@ struct PublishedScan
 class RecordingPublisher : public PFDataPublisher
 {
 public:
-  explicit RecordingPublisher(std::shared_ptr<ScanParameters> params = scanParameters())
-    : PFDataPublisher(scanConfig(), std::move(params))
+  explicit RecordingPublisher(std::shared_ptr<ScanParameters> params = scanParameters(),
+                              std::shared_ptr<DropCounters> counters = nullptr)
+    : PFDataPublisher(scanConfig(), std::move(params), std::move(counters))
   {
     frame_id_ = "synthetic_laser";
   }
