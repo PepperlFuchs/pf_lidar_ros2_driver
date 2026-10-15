@@ -4,7 +4,7 @@
 
 **Prerequisites:**  
 OMDxxx-R2000 Hardware & Firmware >= 1.50 (No support of OBDxxx-R2000 devices)  
-OMDxxx-R2300 Hardware >= 0.95, Firmware >= 1.00
+OMDxxx-R2300 Hardware >= 0.95, Firmware >= 1.00  
 OMDxxx-R2400 Hardware & Firmware >= 1.00
 
 **Required platform:**  
