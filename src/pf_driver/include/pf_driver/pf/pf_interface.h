@@ -13,6 +13,7 @@
 #include "pf_driver/pf/timesync.h"
 #include "pf_driver/communication/transport.h"
 #include "pf_driver/pf/pfsdp_base.h"
+#include "pf_driver/ros/drop_diagnostics.h"
 
 #include "pf_interfaces/srv/pfsdp_get_protocol_info.hpp"
 #include "pf_interfaces/srv/pfsdp_reboot_device.hpp"
@@ -58,6 +59,7 @@ private:
   using PipelinePtr = std::unique_ptr<Pipeline>;
 
   std::shared_ptr<rclcpp::Node> node_;
+  DropDiagnostics drop_diagnostics_;
   rclcpp::TimerBase::SharedPtr watchdog_timer_;
   rclcpp::TimerBase::SharedPtr timesync_timer_;
   std::unique_ptr<Transport> transport_;

@@ -19,6 +19,11 @@ public:
   std::vector<uint16_t> amplitude;
   rclcpp::Serialization<pf_interfaces::msg::PFHeader> serialization;
 
+  virtual const pf_interfaces::msg::PFHeader& commonHeader() const
+  {
+    return header;
+  }
+
   virtual void read_with(PFPacketReader& reader)
   {
   }

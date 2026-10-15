@@ -61,7 +61,41 @@ turn. This is not strictly from bottom to top:
 |3 |+1.5° | - |
 
 **ROS-Topics:**  
-The R2000 and R2300 devices each publish two topics. See the topics documentation [topics.md](./docs/topics.md) for more details.
+The driver publishes scan or point-cloud data, packet headers and drop diagnostics.
+See [topics.md](./docs/topics.md) for their fields and counting rules.
+
+**Drop diagnostics:**
+The driver reports cumulative scan and packet drop counts on `/diagnostics`.
+The read-only `diagnostics.period` parameter sets the wall-clock publication period
+in seconds, with a default of `1.0`. It must be finite, positive and representable
+in nanoseconds. A separate one-second wall timer summarizes drops in the node's
+log, including the remaining drops after input stops. These timers continue when
+ROS time is paused.
+
+The counters persist across publisher and packet-pipeline recreation. A scan
+counted after a discarded packet can still be published if that packet arrives
+again. The diagnostics therefore describe affected scans, not a subtraction from
+the published count. The bounded attribution history, startup exclusions and
+inherited duplicate-packet behavior are documented in [topics.md](./docs/topics.md#drop-diagnostics).
+
+**Tests without a scanner:**
+From the ROS workspace root, build the driver and its dependencies before running
+the registered tests. The packet fixtures use the installed package data.
+
+```sh
+export CMAKE_BUILD_PARALLEL_LEVEL=2
+colcon build --base-paths src --packages-up-to pf_driver --executor sequential \
+  --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+source install/setup.bash
+colcon test --base-paths src --packages-select pf_driver --executor sequential \
+  --return-code-on-test-failure --event-handlers console_direct+
+colcon test-result --verbose
+```
+
+The tests check packet assembly, counter attribution, real queue overflow,
+recreated publishers and pipelines, concurrent accounting, diagnostics with
+paused ROS time, and a blocked default callback group. They do not replace
+validation with the sensor and deployed controller.
 
 **ROS-Services:**  
 The ROS driver offers several ROS services which can be used to communicate with the sensor. Especially

@@ -2,8 +2,8 @@
 
 LaserscanPublisher::LaserscanPublisher(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<ScanConfig> config,
                                        std::shared_ptr<ScanParameters> params, const std::string& scan_topic,
-                                       const std::string& frame_id)
-  : PFDataPublisher(config, params), node_(node)
+                                       const std::string& frame_id, std::shared_ptr<DropCounters> counters)
+  : PFDataPublisher(config, params, std::move(counters)), node_(node)
 {
   scan_publisher_ = node_->create_publisher<sensor_msgs::msg::LaserScan>(scan_topic, rclcpp::SensorDataQoS());
   header_publisher_ = node_->create_publisher<pf_interfaces::msg::PFR2000Header>("/r2000_header", 1);

@@ -6,13 +6,15 @@
 #include <sensor_msgs/msg/laser_scan.hpp>
 
 #include "pf_driver/pf/pf_packet_reader.h"
+#include "pf_driver/pf/drop_counters.h"
 #include "pf_interfaces/msg/pfr2000_header.hpp"
 #include "pf_interfaces/msg/pfr2300_header.hpp"
 
 class PFDataPublisher : public PFPacketReader
 {
 public:
-  PFDataPublisher(std::shared_ptr<ScanConfig> config, std::shared_ptr<ScanParameters> params);
+  PFDataPublisher(std::shared_ptr<ScanConfig> config, std::shared_ptr<ScanParameters> params,
+                  std::shared_ptr<DropCounters> counters = nullptr);
 
   virtual void read(PFR2000Packet_A& packet);
   virtual void read(PFR2000Packet_B& packet);
@@ -25,8 +27,11 @@ public:
 
 protected:
   std::string frame_id_;
-  // starting with 'true' suppresses log message about incomplete scan before first output
-  bool reported_drop_ = true;
+  std::shared_ptr<DropCounters> counters_;
+  RecentScanAttribution recent_scans_;
+  bool current_published_ = false;
+  // Kept even when recent_scans_ evicts this scan during interleaved input.
+  bool current_accounted_ = false;
   uint16_t scan_number_ = 0;
   uint16_t count_points_current_scan_ = 0;
 

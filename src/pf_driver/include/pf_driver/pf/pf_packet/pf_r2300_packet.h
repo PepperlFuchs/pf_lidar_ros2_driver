@@ -15,4 +15,9 @@ public:
   virtual std::tuple<uint16_t, uint32_t, uint16_t> read_header(boost::shared_array<uint8_t> buffer);
 
   pf_interfaces::msg::PFR2300Header header;
+
+  const pf_interfaces::msg::PFHeader& commonHeader() const override
+  {
+    return header.header;
+  }
 };

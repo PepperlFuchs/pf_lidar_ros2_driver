@@ -15,8 +15,9 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-PFDataPublisher::PFDataPublisher(std::shared_ptr<ScanConfig> config, std::shared_ptr<ScanParameters> params)
-  : config_(config), params_(params)
+PFDataPublisher::PFDataPublisher(std::shared_ptr<ScanConfig> config, std::shared_ptr<ScanParameters> params,
+                                 std::shared_ptr<DropCounters> counters)
+  : counters_(counters ? std::move(counters) : std::make_shared<DropCounters>()), config_(config), params_(params)
 {
 }
 
@@ -115,15 +116,25 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
 
     if (packet.header.header.packet_number != 1)
     {
-      /* Discard whole scan if any packet is missing */
-      if (!reported_drop_)
+      // Ignore a partial scan at startup, as before. Attribution does not alter
+      // acceptance if this packet is delivered again after its first packet.
+      if (msg_ && recent_scans_.remember(packet.header.header.scan_number))
       {
-          RCLCPP_WARN(rclcpp::get_logger("pf_data_publisher"), "Dropping incomplete scan %d.", scan_number_);
-          reported_drop_ = true;
+        counters_->recordDrop(DropReason::MISSING_FIRST_PACKET,
+                              { packet.header.header.scan_number, packet.header.header.packet_number });
       }
       return;
     }
-    reported_drop_ = false;
+
+    if (msg_ && !current_published_ && !current_accounted_)
+    {
+      recent_scans_.remember(scan_number_);
+      counters_->recordDrop(DropReason::INCOMPLETE_SCAN,
+                            { scan_number_, 0, packet.header.header.scan_number,
+                              count_points_current_scan_, msg_->ranges.size() });
+    }
+    current_published_ = false;
+    current_accounted_ = recent_scans_.contains(packet.header.header.scan_number);
 
     msg_.reset(new sensor_msgs::msg::LaserScan());
 
@@ -261,6 +272,10 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
 
   if (count_points_current_scan_ == packet.header.num_points_scan)
   {
+    current_published_ = true;
+    current_accounted_ = true;
+    recent_scans_.remember(scan_number_);
+    counters_->recordPublication();
     handle_scan(msg_, layer_idx, layer_inclination, params_->apply_correction);
   }
 }

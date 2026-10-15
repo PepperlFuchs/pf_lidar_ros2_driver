@@ -9,6 +9,8 @@ find_package(pf_interfaces)
 find_package(laser_geometry REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rcl_interfaces REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -26,6 +28,7 @@ pkg_check_modules(CURLPP REQUIRED curlpp)
 
 
 set(${PROJECT_NAME}_SOURCES
+  src/pf/drop_counters.cpp
   src/pf/pf_interface.cpp
   src/pf/parser_utils.cpp
   src/pf/pf_packet_reader.cpp
@@ -48,12 +51,14 @@ set(${PROJECT_NAME}_SOURCES
   src/ros/point_cloud_publisher.cpp
   src/ros/pf_data_publisher.cpp
   src/ros/pf_services.cpp
+  src/ros/drop_diagnostics.cpp
 )
 
 add_executable(ros_main
   ${${PROJECT_NAME}_SOURCES}
   src/ros/ros_main.cpp
 )
+target_compile_features(ros_main PRIVATE cxx_std_17)
 target_include_directories(ros_main PRIVATE
   include
   ${jsoncpp_INCLUDE_DIRS}
@@ -68,6 +73,8 @@ target_link_libraries(ros_main
   ${pf_interfaces_TARGETS}
   laser_geometry::laser_geometry
   rclcpp::rclcpp
+  ${rcl_interfaces_TARGETS}
+  ${diagnostic_msgs_TARGETS}
   ${sensor_msgs_TARGETS}
   tf2_ros::tf2_ros
 )
@@ -87,6 +94,10 @@ if (BUILD_TESTING)
   #  tests/pfsdp_protocol.cpp)
     tests/pipeline.cpp
     tests/parse_packet.cpp
+    tests/scan_assembly.cpp
+    tests/drop_counters.cpp
+    tests/queue_overflow.cpp
+    tests/drop_diagnostics.cpp
   )
 
   # Add gtests
@@ -94,6 +105,7 @@ if (BUILD_TESTING)
     ${${PROJECT_NAME}_SOURCES}
     ${${PROJECT_NAME}_TEST_SOURCES}
     tests/main.cpp)
+  target_compile_features(${PROJECT_NAME}_test PRIVATE cxx_std_17)
   target_include_directories(${PROJECT_NAME}_test PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
