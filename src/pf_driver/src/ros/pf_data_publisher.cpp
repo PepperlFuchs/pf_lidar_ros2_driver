@@ -131,7 +131,8 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
     scan_number_ = packet.header.header.scan_number;
     count_points_current_scan_ = 0;
 
-    msg_->scan_time = 1000.0 / (double)packet.header.scan_frequency;
+    const double scan_time = 1000.0 / static_cast<double>(packet.header.scan_frequency);
+    msg_->scan_time = scan_time;
     msg_->angle_increment = packet.header.angular_increment / 10000.0 * (M_PI / 180.0);
 
     {
@@ -164,7 +165,7 @@ void PFDataPublisher::to_msg_queue(T& packet, uint16_t layer_idx, int layer_incl
       }
       else
       {
-        msg_->time_increment = fabs(msg_->scan_time * (double)packet.header.angular_increment * (1.0 / 3600000.0));
+        msg_->time_increment = fabs(scan_time * (double)packet.header.angular_increment * (1.0 / 3600000.0));
       }
 
       msg_->range_min = params_->radial_range_min;
