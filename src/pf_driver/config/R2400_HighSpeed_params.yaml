@@ -11,4 +11,4 @@ pf_r2400:
     frame_id: "scanner_link"
     watchdogtimeout: 60000
     watchdog: false
-    pfsdp_init: ['scan_frequency=20', 'samples_per_scan=3600', 'scan_preprocessing=on']
+    pfsdp_init: ['samples_per_scan=3600', 'scan_frequency=20', 'scan_preprocessing=on']
