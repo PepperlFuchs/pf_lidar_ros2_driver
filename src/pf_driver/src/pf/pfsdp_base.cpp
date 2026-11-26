@@ -402,6 +402,10 @@ rcl_interfaces::msg::SetParametersResult PFSDPBase::reconfig_callback(const std:
 
 void PFSDPBase::pfsdp_init(const rclcpp::Parameter& parameter)
 {
+  param_vector_type query;
+  param_vector_type rate_set;
+  int rate_at = -1;
+
   std::vector<std::string> pfsdp_init = parameter.as_string_array();
   for (int i = 0; i < pfsdp_init.size(); ++i)
   {
@@ -411,8 +415,34 @@ void PFSDPBase::pfsdp_init(const rclcpp::Parameter& parameter)
       std::string name = pfsdp_init[i].substr(0, eq);
       std::string value = pfsdp_init[i].substr(eq + 1, std::string::npos);
 
-      (void)set_parameter({ KV(name, value) });
+      // take care to set scan_frequency and samples_per_scan
+      // in one single request so their order doesn't matter
+      if (name == "scan_frequency" || name == "samples_per_scan")
+      {
+        rate_set.push_back(KV(name, value));
+        rate_at = query.size();
+      }
+      else
+      {
+        query.push_back(KV(name, value));
+      }
     }
+  }
+
+  for (int i = 0; i < query.size(); ++i)
+  {
+    if (i == rate_at)
+    {
+      get_request("set_parameter", { "" }, rate_set);
+    }
+    // todo: pass more than one at a time but be
+    // careful not to exceed maximum query string length
+    get_request("set_parameter", { "" }, { query[i] });
+  }
+
+  if (query.size() == rate_at)
+  {
+    get_request("set_parameter", { "" }, rate_set);
   }
 }
 
